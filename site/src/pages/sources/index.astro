@@ -16,21 +16,21 @@ if (fs.existsSync(sourcesPath)) {
   <p class="text-gray-600 mb-6" data-i18n="sources.description">IMS Games 收录的所有评论媒体及其历史表现指标。</p>
 
   <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <table class="w-full text-sm">
+    <table id="sources-table" class="w-full text-sm">
       <thead class="bg-gray-50 text-gray-600 text-left">
         <tr>
-          <th class="px-4 py-3 font-medium" data-i18n="sources.col.name">来源</th>
-          <th class="px-4 py-3 font-medium" data-i18n="sources.col.type">类型</th>
-          <th class="px-4 py-3 font-medium" data-i18n="sources.col.language">语言</th>
-          <th class="px-4 py-3 font-medium" data-i18n="sources.col.region">地区</th>
-          <th class="px-4 py-3 font-medium text-right" data-i18n="sources.col.reviews">评论数</th>
-          <th class="px-4 py-3 font-medium text-right" data-i18n="sources.col.avg_score">平均分</th>
-          <th class="px-4 py-3 font-medium text-right" data-i18n="sources.col.weight">权重</th>
+          <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" data-col="0" data-type="string" data-i18n="sources.col.name">来源 <span class="sort-icon text-gray-400 ml-1"></span></th>
+          <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" data-col="1" data-type="string" data-i18n="sources.col.type">类型 <span class="sort-icon text-gray-400 ml-1"></span></th>
+          <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" data-col="2" data-type="string" data-i18n="sources.col.language">语言 <span class="sort-icon text-gray-400 ml-1"></span></th>
+          <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" data-col="3" data-type="string" data-i18n="sources.col.region">地区 <span class="sort-icon text-gray-400 ml-1"></span></th>
+          <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="4" data-type="number" data-i18n="sources.col.reviews">评论数 <span class="sort-icon text-gray-400 ml-1"></span></th>
+          <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="5" data-type="number" data-i18n="sources.col.avg_score">平均分 <span class="sort-icon text-gray-400 ml-1"></span></th>
+          <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="6" data-type="number" data-i18n="sources.col.weight">权重 <span class="sort-icon text-gray-400 ml-1"></span></th>
         </tr>
       </thead>
       <tbody>
         {sources.map((s: any) => (
-          <tr class="border-t border-gray-100 hover:bg-gray-50">
+          <tr class="border-t border-gray-100 hover:bg-gray-50" data-values={`${s.name}|${s.source_type || ""}|${s.language || ""}|${s.country_region || ""}|${s.review_count}|${s.mean_score ?? -1}|${s.base_weight ?? -1}`}>
             <td class="px-4 py-3">
               <a href={`${base}/sources/${s.source_id}`} class="text-ims-700 hover:text-ims-500 font-medium">
                 {s.name}
@@ -48,4 +48,44 @@ if (fs.existsSync(sourcesPath)) {
     </table>
   </div>
   <p class="text-sm text-gray-400 mt-4"><span>{sources.length}</span> <span data-i18n="sources.total">个来源</span></p>
+
+  <script>
+    (function () {
+      var table = document.getElementById("sources-table");
+      if (!table) return;
+      var tbody = table.querySelector("tbody");
+      var rows = Array.from(tbody.querySelectorAll("tr"));
+      var headers = table.querySelectorAll("th[data-col]");
+      var currentSort = { col: -1, asc: true };
+
+      headers.forEach(function (th) {
+        th.addEventListener("click", function () {
+          var col = parseInt(th.getAttribute("data-col"));
+          var type = th.getAttribute("data-type");
+          var asc = currentSort.col === col ? !currentSort.asc : false;
+          currentSort = { col: col, asc: asc };
+
+          rows.sort(function (a, b) {
+            var va = a.getAttribute("data-values").split("|")[col];
+            var vb = b.getAttribute("data-values").split("|")[col];
+            if (type === "number") {
+              va = parseFloat(va) || -1;
+              vb = parseFloat(vb) || -1;
+              return asc ? va - vb : vb - va;
+            }
+            return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+          });
+
+          rows.forEach(function (row) { tbody.appendChild(row); });
+
+          headers.forEach(function (h) {
+            var icon = h.querySelector(".sort-icon");
+            if (icon) icon.textContent = "";
+          });
+          var activeIcon = th.querySelector(".sort-icon");
+          if (activeIcon) activeIcon.textContent = asc ? "\u25B2" : "\u25BC";
+        });
+      });
+    })();
+  </script>
 </Layout>

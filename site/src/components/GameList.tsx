@@ -29,6 +29,21 @@ export default function GameList({ games }: Props) {
     return [...genres].sort();
   }, [games]);
 
+  const toggleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDir(sortDir === "desc" ? "asc" : "desc");
+    } else {
+      setSortBy(field);
+      setSortDir("desc");
+    }
+    setPage(0);
+  };
+
+  const sortIcon = (field: string) => {
+    if (sortBy !== field) return <span className="text-gray-300 ml-1">⇅</span>;
+    return <span className="text-ims-500 ml-1">{sortDir === "desc" ? "▼" : "▲"}</span>;
+  };
+
   const filtered = useMemo(() => {
     let result = games;
     if (search) {
@@ -42,9 +57,12 @@ export default function GameList({ games }: Props) {
       result = result.filter((g) => (g.genres || []).includes(genreFilter));
     }
     result = [...result].sort((a: any, b: any) => {
-      const va = a[sortBy] ?? -1;
-      const vb = b[sortBy] ?? -1;
-      return sortDir === "desc" ? vb - va : va - vb;
+      const va = a[sortBy] ?? "";
+      const vb = b[sortBy] ?? "";
+      if (typeof va === "string") {
+        return sortDir === "desc" ? vb.localeCompare(va) : va.localeCompare(vb);
+      }
+      return sortDir === "desc" ? (vb as number) - (va as number) : (va as number) - (vb as number);
     });
     return result;
   }, [games, search, yearFilter, genreFilter, sortBy, sortDir]);
@@ -73,17 +91,6 @@ export default function GameList({ games }: Props) {
           <option value="">{t("games.all_genres")}</option>
           {allGenres.map((g) => <option key={g} value={g}>{g}</option>)}
         </select>
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
-          <option value="ims_weighted">{t("games.sort_weighted")}</option>
-          <option value="ims_raw">{t("games.sort_raw")}</option>
-          <option value="ims_robust">{t("games.sort_robust")}</option>
-          <option value="metacritic_score">{t("games.sort_mc")}</option>
-          <option value="review_count">{t("games.sort_count")}</option>
-          <option value="title">{t("games.sort_title")}</option>
-        </select>
-        <button onClick={() => setSortDir(sortDir === "desc" ? "asc" : "desc")} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50">
-          {sortDir === "desc" ? t("games.desc") : t("games.asc")}
-        </button>
       </div>
 
       <p className="text-sm text-gray-500 mb-3">{filtered.length.toLocaleString()} {t("games.found")}</p>
@@ -93,12 +100,12 @@ export default function GameList({ games }: Props) {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">{t("col.game")}</th>
-              <th className="px-4 py-3 font-medium">{t("col.year")}</th>
-              <th className="px-4 py-3 font-medium text-right">{t("col.metacritic")}</th>
-              <th className="px-4 py-3 font-medium text-right">{t("col.ims_raw")}</th>
-              <th className="px-4 py-3 font-medium text-right">{t("col.ims_weighted")}</th>
-              <th className="px-4 py-3 font-medium text-right">{t("col.reviews")}</th>
+              <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" onClick={() => toggleSort("title")}>{t("col.game")}{sortIcon("title")}</th>
+              <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" onClick={() => toggleSort("release_year")}>{t("col.year")}{sortIcon("release_year")}</th>
+              <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" onClick={() => toggleSort("metacritic_score")}>{t("col.metacritic")}{sortIcon("metacritic_score")}</th>
+              <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" onClick={() => toggleSort("ims_raw")}>{t("col.ims_raw")}{sortIcon("ims_raw")}</th>
+              <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" onClick={() => toggleSort("ims_weighted")}>{t("col.ims_weighted")}{sortIcon("ims_weighted")}</th>
+              <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" onClick={() => toggleSort("review_count")}>{t("col.reviews")}{sortIcon("review_count")}</th>
             </tr>
           </thead>
           <tbody>
