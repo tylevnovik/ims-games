@@ -33,6 +33,8 @@ const dict: Record<string, { zh: string; en: string }> = {
   "nav.sources": { zh: "媒体源", en: "Sources" },
   "nav.methodology": { zh: "算法说明", en: "Methodology" },
   "nav.data_sources": { zh: "数据来源", en: "Data Sources" },
+  "nav.goat": { zh: "GOAT", en: "GOAT" },
+  "nav.goty": { zh: "GOTY", en: "GOTY" },
 
   // Home page
   "home.title_prefix": { zh: "IMS Games", en: "IMS Games" },
@@ -231,6 +233,28 @@ const dict: Record<string, { zh: string; en: string }> = {
   "ds.freshness_desc": { zh: "数据于 {0} 收集和处理。这是一个静态快照，不是实时更新。", en: "Data was collected and processed on {0}. This is a static snapshot, not a live feed." },
   "ds.copyright_title": { zh: "版权声明", en: "Copyright Notice" },
   "ds.copyright": { zh: "所有评论内容、分数和元数据均属于其各自所有者。IMS Games 仅存储结构化数据和简短摘录用于聚合目的。完整评论内容可在原始来源 URL 处获取。本项目与 Metacritic、OpenCritic 或任何游戏发行商无关。", en: "All review content, scores, and metadata belong to their respective owners. IMS Games only stores structured data and brief excerpts for aggregation purposes. Full review content is available at the original source URLs. This project is not affiliated with Metacritic, OpenCritic, or any game publisher." },
+
+  // GOAT page
+  "goat.page_title": { zh: "GOAT — 史上最伟大游戏", en: "GOAT — Greatest of All Time" },
+  "goat.subtitle": { zh: "史上最伟大游戏", en: "Greatest of All Time" },
+  "goat.page_desc": { zh: "基于 IMS 加权分数排名，选出数据库中最伟大的游戏。", en: "Ranked by IMS Weighted Score — the greatest games in our database." },
+  "goat.title": { zh: "GOAT", en: "GOAT" },
+  "goat.candidates": { zh: "候选排行", en: "Top Candidates" },
+  "goat.based_on": { zh: "排名基于 IMS 加权分（ims_weighted），数据覆盖 12,000+ 款游戏。", en: "Ranked by IMS Weighted Score. Covers 12,000+ games." },
+  "goat.no_data": { zh: "暂无评分数据。", en: "No score data available." },
+
+  // GOTY page
+  "goty.page_title": { zh: "GOTY — 年度游戏", en: "GOTY — Game of the Year" },
+  "goty.subtitle": { zh: "年度游戏", en: "Game of the Year" },
+  "goty.page_desc": { zh: "对比 The Game Awards、BAFTA、GDC 三大颁奖典礼的年度游戏得主，以及 IMS 评分的年度最佳。", en: "Compare Game of the Year winners from The Game Awards, BAFTA, and GDC with IMS score rankings." },
+  "goty.select_year": { zh: "选择年份", en: "Select Year" },
+  "goty.winner": { zh: "年度最佳", en: "GOTY Winner" },
+  "goty.nominees": { zh: "提名", en: "Nominees" },
+  "goty.consensus": { zh: "多奖共识 — 以下游戏获得多个年度最佳奖项：", en: "Consensus — These games won multiple GOTY awards:" },
+  "goty.ims_top": { zh: "IMS 年度 Top 10", en: "IMS Top 10 of" },
+  "goty.no_data": { zh: "暂无年度游戏数据。", en: "No GOTY data available." },
+  "goty.no_ims_data": { zh: "该年份暂无 IMS 评分数据。", en: "No IMS score data for this year." },
+  "goty.about": { zh: "颁奖数据来源于 The Game Awards (TGA)、英国学院游戏奖 (BAFTA)、游戏开发者选择奖 (GDC)。", en: "Award data sourced from The Game Awards (TGA), BAFTA Games Awards, and Game Developers Choice Awards (GDC)." },
 
   // Footer
   "footer.tagline": { zh: "IMS Games — 透明、可解释、可扩展的游戏评分聚合。", en: "IMS Games — Transparent, explainable, and extensible game score aggregation." },

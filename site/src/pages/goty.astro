@@ -1,0 +1,46 @@
+---
+import Layout from "../layouts/Layout.astro";
+import GotyList from "../components/GotyList";
+import fs from "node:fs";
+import path from "node:path";
+
+let games: any[] = [];
+const gamesPath = path.join(process.cwd(), "public", "data", "games.json");
+if (fs.existsSync(gamesPath)) {
+  const all = JSON.parse(fs.readFileSync(gamesPath, "utf-8"));
+  // Only pass games with year + IMS score, strip heavy fields
+  games = all
+    .filter((g: any) => g.release_year && g.ims_weighted != null)
+    .map((g: any) => ({
+      game_id: g.game_id,
+      title: g.title,
+      release_year: g.release_year,
+      developer: g.developer,
+      publisher: null,
+      genres: [],
+      platforms: [],
+      description: null,
+      metacritic_score: g.metacritic_score,
+      rawg_metacritic_score: g.rawg_metacritic_score,
+      ims_raw: g.ims_raw,
+      ims_robust: g.ims_robust,
+      ims_calibrated: g.ims_calibrated,
+      ims_weighted: g.ims_weighted,
+      review_count: g.review_count,
+      has_enhanced_data: false,
+    }));
+}
+---
+
+<Layout title="GOTY">
+  <section class="mb-6">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+      &#x1F396;&#xFE0F; GOTY &mdash; <span data-i18n="goty.subtitle">年度游戏</span>
+    </h1>
+    <p class="text-gray-500 text-sm" data-i18n="goty.page_desc">
+      对比 The Game Awards、BAFTA、GDC 三大颁奖典礼的年度游戏得主，以及 IMS 评分的年度最佳。
+    </p>
+  </section>
+
+  <GotyList client:load games={games} />
+</Layout>

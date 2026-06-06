@@ -1,0 +1,48 @@
+---
+import Layout from "../layouts/Layout.astro";
+import GoatList from "../components/GoatList";
+import fs from "node:fs";
+import path from "node:path";
+
+let games: any[] = [];
+const gamesPath = path.join(process.cwd(), "public", "data", "games.json");
+if (fs.existsSync(gamesPath)) {
+  const all = JSON.parse(fs.readFileSync(gamesPath, "utf-8"));
+  // Only pass top 50 by IMS weighted, strip heavy fields
+  games = all
+    .filter((g: any) => g.ims_weighted != null)
+    .sort((a: any, b: any) => b.ims_weighted - a.ims_weighted)
+    .slice(0, 50)
+    .map((g: any) => ({
+      game_id: g.game_id,
+      title: g.title,
+      release_year: g.release_year,
+      developer: g.developer,
+      publisher: null,
+      genres: [],
+      platforms: [],
+      description: g.description,
+      metacritic_score: g.metacritic_score,
+      rawg_metacritic_score: g.rawg_metacritic_score,
+      ims_raw: g.ims_raw,
+      ims_robust: g.ims_robust,
+      ims_calibrated: g.ims_calibrated,
+      ims_weighted: g.ims_weighted,
+      review_count: g.review_count,
+      has_enhanced_data: false,
+    }));
+}
+---
+
+<Layout title="GOAT">
+  <section class="mb-6">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+      &#x1F3C6; GOAT &mdash; <span data-i18n="goat.subtitle">史上最伟大游戏</span>
+    </h1>
+    <p class="text-gray-500 text-sm" data-i18n="goat.page_desc">
+      基于 IMS 加权分数排名，选出数据库中最伟大的游戏。
+    </p>
+  </section>
+
+  <GoatList client:load games={games} />
+</Layout>

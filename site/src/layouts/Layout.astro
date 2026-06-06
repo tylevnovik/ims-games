@@ -31,6 +31,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         <!-- Desktop nav -->
         <div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
           <a href={`${base}/games`} data-i18n="nav.games" class="hover:text-ims-600 transition-colors">游戏库</a>
+          <a href={`${base}/goat`} data-i18n="nav.goat" class="hover:text-ims-600 transition-colors">GOAT</a>
+          <a href={`${base}/goty`} data-i18n="nav.goty" class="hover:text-ims-600 transition-colors">GOTY</a>
           <a href={`${base}/sources`} data-i18n="nav.sources" class="hover:text-ims-600 transition-colors">媒体源</a>
           <a href={`${base}/methodology`} data-i18n="nav.methodology" class="hover:text-ims-600 transition-colors">算法说明</a>
           <a href={`${base}/data-sources`} data-i18n="nav.data_sources" class="hover:text-ims-600 transition-colors">数据来源</a>
@@ -41,6 +43,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       <div id="mobile-menu" class="hidden md:hidden border-t border-gray-200 bg-white">
         <div class="max-w-7xl mx-auto px-4 py-3 space-y-2 text-sm font-medium text-gray-600">
           <a href={`${base}/games`} data-i18n="nav.games" class="block py-2 hover:text-ims-600 transition-colors">游戏库</a>
+          <a href={`${base}/goat`} data-i18n="nav.goat" class="block py-2 hover:text-ims-600 transition-colors">GOAT</a>
+          <a href={`${base}/goty`} data-i18n="nav.goty" class="block py-2 hover:text-ims-600 transition-colors">GOTY</a>
           <a href={`${base}/sources`} data-i18n="nav.sources" class="block py-2 hover:text-ims-600 transition-colors">媒体源</a>
           <a href={`${base}/methodology`} data-i18n="nav.methodology" class="block py-2 hover:text-ims-600 transition-colors">算法说明</a>
           <a href={`${base}/data-sources`} data-i18n="nav.data_sources" class="block py-2 hover:text-ims-600 transition-colors">数据来源</a>
@@ -68,6 +72,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
           "nav.sources": { zh: "媒体源", en: "Sources" },
           "nav.methodology": { zh: "算法说明", en: "Methodology" },
           "nav.data_sources": { zh: "数据来源", en: "Data Sources" },
+          "nav.goat": { zh: "GOAT", en: "GOAT" },
+          "nav.goty": { zh: "GOTY", en: "GOTY" },
           // Home
           "home.subtitle": { zh: "透明游戏评分", en: "Transparent Game Scores" },
           "home.description": { zh: "一个透明、可解释、可扩展的游戏评分聚合系统。不同于黑箱评分，IMS Games 的每个分数都基于公开文档化的规则计算，您可以自定义权重以匹配您的偏好。", en: "A transparent, explainable, and extensible game score aggregation system. Unlike black-box scores, every IMS Games score is computed with publicly documented rules and you can customize the weighting to match your preferences." },
@@ -162,6 +168,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
           "sources.total": { zh: "个媒体源", en: "sources total" },
           // Games list
           "games.title": { zh: "游戏库", en: "Game Library" },
+          // GOAT page
+          "goat.subtitle": { zh: "史上最伟大游戏", en: "Greatest of All Time" },
+          "goat.page_desc": { zh: "基于 IMS 加权分数排名，选出数据库中最伟大的游戏。", en: "Ranked by IMS Weighted Score — the greatest games in our database." },
+          // GOTY page
+          "goty.subtitle": { zh: "年度游戏", en: "Game of the Year" },
+          "goty.page_desc": { zh: "对比 The Game Awards、BAFTA、GDC 三大颁奖典礼的年度游戏得主，以及 IMS 评分的年度最佳。", en: "Compare Game of the Year winners from The Game Awards, BAFTA, and GDC with IMS score rankings." },
           // Footer
           "footer.tagline": { zh: "IMS Games \u2014 透明、可解释、可扩展的游戏评分聚合。", en: "IMS Games \u2014 Transparent, explainable, and extensible game score aggregation." },
           "footer.version": { zh: "算法 v0.1.0 \u00b7 所有分数均由公开文档化的规则计算。", en: "Algorithm v0.1.0 \u00b7 All scores are computed with publicly documented rules." },
