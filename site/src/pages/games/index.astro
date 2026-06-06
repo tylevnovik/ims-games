@@ -11,7 +11,7 @@ if (fs.existsSync(gamesPath)) {
 }
 ---
 
-<Layout title="Games">
-  <h1 class="text-3xl font-bold text-gray-900 mb-6">Game Library</h1>
+<Layout title="游戏库">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6" data-i18n="games.title">游戏库</h1>
   <GameList client:load games={games} />
 </Layout>

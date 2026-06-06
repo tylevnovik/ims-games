@@ -9,7 +9,7 @@ const { title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="zh">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -24,10 +24,11 @@ const { title } = Astro.props;
           <span class="text-2xl">&#9670;</span> IMS Games
         </a>
         <div class="flex items-center gap-6 text-sm font-medium text-gray-600">
-          <a href="/games" class="hover:text-ims-600 transition-colors">Games</a>
-          <a href="/sources" class="hover:text-ims-600 transition-colors">Sources</a>
-          <a href="/methodology" class="hover:text-ims-600 transition-colors">Methodology</a>
-          <a href="/data-sources" class="hover:text-ims-600 transition-colors">Data Sources</a>
+          <a href="/games" data-i18n="nav.games" class="hover:text-ims-600 transition-colors">游戏库</a>
+          <a href="/sources" data-i18n="nav.sources" class="hover:text-ims-600 transition-colors">媒体源</a>
+          <a href="/methodology" data-i18n="nav.methodology" class="hover:text-ims-600 transition-colors">算法说明</a>
+          <a href="/data-sources" data-i18n="nav.data_sources" class="hover:text-ims-600 transition-colors">数据来源</a>
+          <button id="lang-toggle" class="px-2 py-1 text-xs font-bold border border-gray-300 rounded hover:bg-gray-50 transition-colors">中</button>
         </div>
       </nav>
     </header>
@@ -38,9 +39,82 @@ const { title } = Astro.props;
 
     <footer class="bg-white border-t border-gray-200 mt-auto">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-gray-500">
-        <p>IMS Games &mdash; Transparent, explainable, and extensible game score aggregation.</p>
-        <p class="mt-1">Algorithm v0.1.0 &middot; All scores are computed with publicly documented rules.</p>
+        <p data-i18n="footer.tagline">IMS Games &mdash; 透明、可解释、可扩展的游戏评分聚合。</p>
+        <p data-i18n="footer.version" class="mt-1">算法 v0.1.0 &middot; 所有分数均由公开文档化的规则计算。</p>
       </div>
     </footer>
+
+    <script>
+      (function () {
+        var translations = {
+          "nav.games": { zh: "游戏库", en: "Games" },
+          "nav.sources": { zh: "媒体源", en: "Sources" },
+          "nav.methodology": { zh: "算法说明", en: "Methodology" },
+          "nav.data_sources": { zh: "数据来源", en: "Data Sources" },
+          "footer.tagline": {
+            zh: "IMS Games \u2014 透明、可解释、可扩展的游戏评分聚合。",
+            en: "IMS Games \u2014 Transparent, explainable, and extensible game score aggregation.",
+          },
+          "footer.version": {
+            zh: "算法 v0.1.0 \u00b7 所有分数均由公开文档化的规则计算。",
+            en: "Algorithm v0.1.0 \u00b7 All scores are computed with publicly documented rules.",
+          },
+        };
+
+        function getLang() {
+          return localStorage.getItem("ims-lang") || "zh";
+        }
+
+        function applyTranslations(lang) {
+          var elements = document.querySelectorAll("[data-i18n]");
+          for (var i = 0; i < elements.length; i++) {
+            var key = elements[i].getAttribute("data-i18n");
+            if (translations[key] && translations[key][lang] !== undefined) {
+              elements[i].textContent = translations[key][lang];
+            }
+          }
+        }
+
+        function updateToggle(lang) {
+          var btn = document.getElementById("lang-toggle");
+          if (btn) {
+            btn.textContent = lang === "zh" ? "中" : "EN";
+          }
+        }
+
+        function updateHtmlLang(lang) {
+          document.documentElement.lang = lang;
+        }
+
+        // Initialize on load
+        var currentLang = getLang();
+        applyTranslations(currentLang);
+        updateToggle(currentLang);
+        updateHtmlLang(currentLang);
+
+        // Toggle button click
+        var toggleBtn = document.getElementById("lang-toggle");
+        if (toggleBtn) {
+          toggleBtn.addEventListener("click", function () {
+            var newLang = getLang() === "zh" ? "en" : "zh";
+            localStorage.setItem("ims-lang", newLang);
+            applyTranslations(newLang);
+            updateToggle(newLang);
+            updateHtmlLang(newLang);
+            window.dispatchEvent(
+              new CustomEvent("ims-lang-change", { detail: newLang })
+            );
+          });
+        }
+
+        // Listen for lang changes from other sources
+        window.addEventListener("ims-lang-change", function (e) {
+          var lang = e.detail;
+          applyTranslations(lang);
+          updateToggle(lang);
+          updateHtmlLang(lang);
+        });
+      })();
+    </script>
   </body>
 </html>

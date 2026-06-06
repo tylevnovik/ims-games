@@ -1,11 +1,14 @@
 import { useMemo } from "react";
 import type { Review } from "../lib/types";
+import { useLang } from "../lib/i18n";
 
 interface Props {
   reviews: Review[];
 }
 
 export default function ScoreDistributionChart({ reviews }: Props) {
+  const [lang, , t] = useLang();
+
   const buckets = useMemo(() => {
     const scores = reviews.filter((r) => r.score != null).map((r) => r.score!);
     if (!scores.length) return [];
@@ -17,7 +20,6 @@ export default function ScoreDistributionChart({ reviews }: Props) {
       const count = scores.filter((s) => s >= lo && s < hi).length;
       counts.push({ range: `${lo}-${hi}`, count });
     }
-    // Include 100
     counts[9].count += scores.filter((s) => s === 100).length;
     return counts;
   }, [reviews]);
@@ -25,7 +27,7 @@ export default function ScoreDistributionChart({ reviews }: Props) {
   const maxCount = Math.max(...buckets.map((b) => b.count), 1);
 
   if (!buckets.length || buckets.every((b) => b.count === 0)) {
-    return <p className="text-gray-500 text-sm text-center py-8">No score data to display.</p>;
+    return <p className="text-gray-500 text-sm text-center py-8">{t("chart.no_data")}</p>;
   }
 
   const colors = [
@@ -47,7 +49,7 @@ export default function ScoreDistributionChart({ reviews }: Props) {
           </div>
         </div>
       ))}
-      <div className="text-xs text-gray-400 ml-1 self-end">Score</div>
+      <div className="text-xs text-gray-400 ml-1 self-end">{t("chart.score")}</div>
     </div>
   );
 }

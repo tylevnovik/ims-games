@@ -9,16 +9,21 @@ export function getStaticPaths() {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir)
     .filter((f: string) => f.endsWith(".json"))
-    .map((f: string) => ({
-      params: { game_id: f.replace(".json", "") },
-    }));
+    .map((f: string) => {
+      const id = f.replace(".json", "");
+      let title = id;
+      try {
+        const data = JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8"));
+        title = data.title || id;
+      } catch {}
+      return { params: { game_id: id }, props: { title } };
+    });
 }
 
 const { game_id } = Astro.params;
-const filePath = path.join(process.cwd(), "public", "data", "games", `${game_id}.json`);
-const game = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+const { title } = Astro.props;
 ---
 
-<Layout title={game.title}>
-  <GameDetailClient client:load game={game} />
+<Layout title={title}>
+  <GameDetailClient client:load gameId={game_id} />
 </Layout>

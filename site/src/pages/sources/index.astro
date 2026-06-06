@@ -10,21 +10,21 @@ if (fs.existsSync(sourcesPath)) {
 }
 ---
 
-<Layout title="Sources">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Media Sources</h1>
-  <p class="text-gray-600 mb-6">All review sources tracked by IMS Games, with historical performance metrics.</p>
+<Layout title="媒体源">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="sources.title">媒体源</h1>
+  <p class="text-gray-600 mb-6" data-i18n="sources.description">IMS Games 收录的所有评论媒体及其历史表现指标。</p>
 
   <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
     <table class="w-full text-sm">
       <thead class="bg-gray-50 text-gray-600 text-left">
         <tr>
-          <th class="px-4 py-3 font-medium">Source</th>
-          <th class="px-4 py-3 font-medium">Type</th>
-          <th class="px-4 py-3 font-medium">Language</th>
-          <th class="px-4 py-3 font-medium">Region</th>
-          <th class="px-4 py-3 font-medium text-right">Reviews</th>
-          <th class="px-4 py-3 font-medium text-right">Avg Score</th>
-          <th class="px-4 py-3 font-medium text-right">Weight</th>
+          <th class="px-4 py-3 font-medium" data-i18n="sources.col.name">来源</th>
+          <th class="px-4 py-3 font-medium" data-i18n="sources.col.type">类型</th>
+          <th class="px-4 py-3 font-medium" data-i18n="sources.col.language">语言</th>
+          <th class="px-4 py-3 font-medium" data-i18n="sources.col.region">地区</th>
+          <th class="px-4 py-3 font-medium text-right" data-i18n="sources.col.reviews">评论数</th>
+          <th class="px-4 py-3 font-medium text-right" data-i18n="sources.col.avg_score">平均分</th>
+          <th class="px-4 py-3 font-medium text-right" data-i18n="sources.col.weight">权重</th>
         </tr>
       </thead>
       <tbody>
@@ -46,5 +46,5 @@ if (fs.existsSync(sourcesPath)) {
       </tbody>
     </table>
   </div>
-  <p class="text-sm text-gray-400 mt-4">{sources.length} sources total</p>
+  <p class="text-sm text-gray-400 mt-4"><span>{sources.length}</span> <span data-i18n="sources.total">个来源</span></p>
 </Layout>

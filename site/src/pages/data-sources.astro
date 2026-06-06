@@ -10,55 +10,55 @@ if (fs.existsSync(metaPath)) {
 }
 ---
 
-<Layout title="Data Sources">
-  <h1 class="text-3xl font-bold text-gray-900 mb-6">Data Sources &amp; Licensing</h1>
+<Layout title="数据来源">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6" data-i18n="data_sources.title">数据来源与授权</h1>
 
   <div class="space-y-6">
     <section class="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 class="text-xl font-bold mb-3">Kaggle Metacritic Dataset</h2>
-      <p class="text-gray-600 mb-2">
-        The primary data source for game metadata and critic review scores. This open dataset
-        contains approximately 321,000 individual review entries across 12,000+ games from 500+ media outlets.
+      <h2 class="text-xl font-bold mb-3" data-i18n="data_sources.kaggle">Kaggle Metacritic 数据集</h2>
+      <p class="text-gray-600 mb-2" data-i18n="data_sources.kaggle_desc">
+        游戏元数据和媒体评分的主要数据来源。此开放数据集
+        包含约 321,000 条评论记录，涵盖 12,000+ 款游戏、500+ 家媒体。
       </p>
       <ul class="list-disc pl-6 text-gray-600 text-sm space-y-1">
-        <li>Contains: game titles, media outlet names, review text excerpts, numeric scores</li>
-        <li>Does NOT contain: full review articles, reviewer names, review URLs</li>
-        <li>Original source: Kaggle (publicly available dataset)</li>
-        <li>License: Public dataset for research use</li>
+        <li data-i18n="data_sources.kaggle.contains">包含：游戏标题、媒体名称、评论摘要、数字评分</li>
+        <li data-i18n="data_sources.kaggle.not_contains">不包含：完整评论文章、评论者姓名、评论链接</li>
+        <li data-i18n="data_sources.kaggle.source">原始来源：Kaggle（公开可用数据集）</li>
+        <li data-i18n="data_sources.kaggle.license">授权：用于研究的公开数据集</li>
       </ul>
     </section>
 
     <section class="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 class="text-xl font-bold mb-3">OpenCritic Data</h2>
-      <p class="text-gray-600 mb-2">
-        Used for enhanced review-level data with individual critic reviews, outlet information,
-        reviewer names, and review links. Currently using mock data for demonstration.
+      <h2 class="text-xl font-bold mb-3" data-i18n="data_sources.opencritic">OpenCritic 数据</h2>
+      <p class="text-gray-600 mb-2" data-i18n="data_sources.opencritic_desc">
+        用于增强评论级别数据，包含独立评论、媒体信息、
+        评论者姓名和评论链接。目前使用模拟数据进行演示。
       </p>
       <ul class="list-disc pl-6 text-gray-600 text-sm space-y-1">
-        <li>API integration planned for when API key is available</li>
-        <li>Mock data used for 25 popular games as proof-of-concept</li>
-        <li>Each review retains its provenance URL for attribution</li>
+        <li data-i18n="data_sources.opencritic.api">API 集成计划在 API 密钥可用后实施</li>
+        <li data-i18n="data_sources.opencritic.mock">25 款热门游戏的模拟数据作为概念验证</li>
+        <li data-i18n="data_sources.opencritic.provenance">每条评论保留来源链接用于署名</li>
       </ul>
     </section>
 
     <section class="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 class="text-xl font-bold mb-3">Our Data Practices</h2>
+      <h2 class="text-xl font-bold mb-3" data-i18n="data_sources.practices">数据实践</h2>
       <div class="space-y-3 text-gray-600 text-sm">
-        <p><strong>What we store:</strong> Structured fields (scores, dates, platform, language), short summaries, and links to original reviews.</p>
-        <p><strong>What we don't store:</strong> Full copyrighted review text. Only structured data and brief excerpts.</p>
-        <p><strong>Attribution:</strong> Every review entry retains a provenance URL linking to the original source. Original scores are credited to their respective outlets.</p>
-        <p><strong>Purpose:</strong> This site is for research, demonstration, and score aggregation experiments only.</p>
-        <p><strong>Data freshness:</strong> Data was collected and processed on {meta.build_timestamp ? new Date(meta.build_timestamp).toLocaleDateString() : "an earlier date"}. This is a static snapshot, not a live feed.</p>
+        <p data-i18n="data_sources.practices.store"><strong>我们存储的内容：</strong>结构化字段（评分、日期、平台、语言）、简短摘要及原始评论链接。</p>
+        <p data-i18n="data_sources.practices.not_store"><strong>我们不存储的内容：</strong>完整的受版权保护的评论文本。仅存储结构化数据和简短摘录。</p>
+        <p data-i18n="data_sources.practices.attribution"><strong>署名：</strong>每条评论记录保留指向原始来源的来源链接。原始评分归属于相应媒体。</p>
+        <p data-i18n="data_sources.practices.purpose"><strong>用途：</strong>本网站仅用于研究、演示和评分聚合实验。</p>
+        <p data-i18n="data_sources.practices.freshness"><strong>数据时效：</strong>数据采集和处理时间为 {meta.build_timestamp ? new Date(meta.build_timestamp).toLocaleDateString() : "此前某个日期"}。这是一个静态快照，非实时更新。</p>
       </div>
     </section>
 
     <section class="bg-amber-50 rounded-xl border border-amber-200 p-6">
-      <h2 class="text-xl font-bold text-amber-800 mb-2">Copyright Notice</h2>
-      <p class="text-amber-700 text-sm">
-        All review content, scores, and metadata belong to their respective owners.
-        IMS Games only stores structured data and brief excerpts for aggregation purposes.
-        Full review content is available at the original source URLs.
-        This project is not affiliated with Metacritic, OpenCritic, or any game publisher.
+      <h2 class="text-xl font-bold text-amber-800 mb-2" data-i18n="data_sources.copyright">版权声明</h2>
+      <p class="text-amber-700 text-sm" data-i18n="data_sources.copyright_desc">
+        所有评论内容、评分和元数据归属于各自的所有者。
+        IMS Games 仅存储结构化数据和简短摘录用于聚合目的。
+        完整评论内容可在原始来源链接处获取。
+        本项目与 Metacritic、OpenCritic 或任何游戏发行商无关。
       </p>
     </section>
   </div>
