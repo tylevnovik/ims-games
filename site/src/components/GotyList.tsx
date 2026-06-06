@@ -21,20 +21,44 @@ function normalise(s: string): string {
 
 function findGame(title: string, games: GameSummary[]): GameSummary | null {
   const n = normalise(title);
-  // Exact normalised match
+  const nWords = n.split(" ").filter((w) => w.length >= 3);
+
+  // 1. Exact normalised match
   const exact = games.find((g) => normalise(g.title) === n);
   if (exact) return exact;
-  // Contains (e.g. "The Witcher 3" matches "The Witcher 3: Wild Hunt")
-  const contains = games.find(
-    (g) => normalise(g.title).includes(n) || n.includes(normalise(g.title)),
-  );
+
+  // 2. Game title contains award title (length-filtered)
+  const contains = games.find((g) => {
+    const gn = normalise(g.title);
+    if (gn.includes(n)) {
+      return gn.length <= n.length * 2.5;
+    }
+    return false;
+  });
   if (contains) return contains;
-  // First-word match + year proximity
-  const firstWord = n.split(" ")[0];
-  if (firstWord.length >= 4) {
-    const partial = games.find((g) => normalise(g.title).startsWith(firstWord));
-    if (partial) return partial;
+
+  // 3. Award title contains game title (length-filtered)
+  const reverseContains = games.find((g) => {
+    const gn = normalise(g.title);
+    if (n.includes(gn)) {
+      return n.length <= gn.length * 2.5;
+    }
+    return false;
+  });
+  if (reverseContains) return reverseContains;
+
+  // 4. Word overlap — all significant award words must appear in game title
+  if (nWords.length >= 1) {
+    const wordMatch = games.find((g) => {
+      const gn = normalise(g.title);
+      const gWords = gn.split(" ").filter((w) => w.length >= 3);
+      if (!nWords.every((w) => gWords.includes(w))) return false;
+      const ratio = gWords.length / nWords.length;
+      return ratio >= 0.5 && ratio <= 2.5;
+    });
+    if (wordMatch) return wordMatch;
   }
+
   return null;
 }
 
