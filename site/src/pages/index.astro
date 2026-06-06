@@ -1,0 +1,120 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+let meta = { total_games: 0, total_sources: 0, total_reviews: 0, algorithm_version: "0.1.0", data_sources: [] };
+let topGames: any[] = [];
+
+try {
+  const metaRes = await fetch(new URL("../../public/data/meta.json", import.meta.url), { priority: "high" }).catch(() => null);
+  if (metaRes) {
+    const text = await metaRes.text();
+    meta = JSON.parse(text);
+  }
+} catch { /* use defaults */ }
+
+try {
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  const metaPath = path.join(process.cwd(), "public", "data", "meta.json");
+  if (fs.existsSync(metaPath)) {
+    meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
+  }
+  const gamesPath = path.join(process.cwd(), "public", "data", "games.json");
+  if (fs.existsSync(gamesPath)) {
+    const games = JSON.parse(fs.readFileSync(gamesPath, "utf-8"));
+    topGames = games
+      .filter((g: any) => g.ims_weighted != null)
+      .sort((a: any, b: any) => b.ims_weighted - a.ims_weighted)
+      .slice(0, 10);
+  }
+} catch { /* static build fallback */ }
+---
+
+<Layout title="Home">
+  <section class="text-center mb-12">
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">
+      <span class="text-ims-600">IMS Games</span> &mdash; Transparent Game Scores
+    </h1>
+    <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+      A transparent, explainable, and extensible game score aggregation system.
+      Unlike black-box scores, every IMS Games score is computed with publicly documented rules
+      and you can customize the weighting to match your preferences.
+    </p>
+  </section>
+
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+    <div class="bg-white rounded-xl border border-gray-200 p-6 text-center">
+      <div class="text-3xl font-bold text-ims-600">{meta.total_games.toLocaleString()}</div>
+      <div class="text-sm text-gray-500 mt-1">Games in Database</div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 text-center">
+      <div class="text-3xl font-bold text-ims-600">{meta.total_sources.toLocaleString()}</div>
+      <div class="text-sm text-gray-500 mt-1">Media Sources</div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 text-center">
+      <div class="text-3xl font-bold text-ims-600">{meta.total_reviews.toLocaleString()}</div>
+      <div class="text-sm text-gray-500 mt-1">Reviews Collected</div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-bold text-gray-800">Top Rated Games</h2>
+      <a href="/games" class="text-sm text-ims-600 hover:text-ims-500 font-medium">View all &rarr;</a>
+    </div>
+    {topGames.length > 0 ? (
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-gray-600 text-left">
+            <tr>
+              <th class="px-4 py-3 font-medium">#</th>
+              <th class="px-4 py-3 font-medium">Game</th>
+              <th class="px-4 py-3 font-medium text-right">Metacritic</th>
+              <th class="px-4 py-3 font-medium text-right">IMS Raw</th>
+              <th class="px-4 py-3 font-medium text-right">IMS Weighted</th>
+              <th class="px-4 py-3 font-medium text-right">Reviews</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topGames.map((game: any, i: number) => (
+              <tr class="border-t border-gray-100 hover:bg-gray-50">
+                <td class="px-4 py-3 text-gray-400">{i + 1}</td>
+                <td class="px-4 py-3">
+                  <a href={`/games/${game.game_id}`} class="text-ims-700 hover:text-ims-500 font-medium">
+                    {game.title}
+                  </a>
+                  {game.release_year && <span class="text-gray-400 ml-1">({game.release_year})</span>}
+                </td>
+                <td class="px-4 py-3 text-right font-mono">{game.metacritic_score != null ? game.metacritic_score.toFixed(1) : "N/A"}</td>
+                <td class="px-4 py-3 text-right font-mono">{game.ims_raw != null ? game.ims_raw.toFixed(1) : "N/A"}</td>
+                <td class="px-4 py-3 text-right font-mono font-bold text-ims-700">{game.ims_weighted != null ? game.ims_weighted.toFixed(1) : "N/A"}</td>
+                <td class="px-4 py-3 text-right text-gray-500">{game.review_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div class="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-500">
+        <p>No game data available yet. Run the data pipeline to generate scores.</p>
+        <code class="text-xs mt-2 block text-gray-400">cd scripts && uv run python build_all.py</code>
+      </div>
+    )}
+  </section>
+
+  <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <a href="/methodology" class="bg-white rounded-xl border border-gray-200 p-6 hover:border-ims-300 hover:shadow-sm transition-all">
+      <h3 class="text-lg font-bold text-gray-800 mb-2">Algorithm &amp; Methodology</h3>
+      <p class="text-sm text-gray-600">
+        Learn how IMS Raw, Robust, Calibrated, and Weighted scores are calculated.
+        Every rule is publicly documented.
+      </p>
+    </a>
+    <a href="/data-sources" class="bg-white rounded-xl border border-gray-200 p-6 hover:border-ims-300 hover:shadow-sm transition-all">
+      <h3 class="text-lg font-bold text-gray-800 mb-2">Data Sources &amp; Licensing</h3>
+      <p class="text-sm text-gray-600">
+        See where our data comes from, how it's collected, and our approach to attribution and licensing.
+      </p>
+    </a>
+  </section>
+</Layout>

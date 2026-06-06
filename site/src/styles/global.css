@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #fafbfc;
+  --color-text: #1a1a2e;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+.score-pill {
+  @apply inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-bold border;
+}

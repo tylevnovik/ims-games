@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import GameList from "../../components/GameList";
+import fs from "node:fs";
+import path from "node:path";
+
+let games: any[] = [];
+const gamesPath = path.join(process.cwd(), "public", "data", "games.json");
+if (fs.existsSync(gamesPath)) {
+  games = JSON.parse(fs.readFileSync(gamesPath, "utf-8"));
+}
+---
+
+<Layout title="Games">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6">Game Library</h1>
+  <GameList client:load games={games} />
+</Layout>

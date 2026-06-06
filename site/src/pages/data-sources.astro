@@ -1,0 +1,65 @@
+---
+import Layout from "../layouts/Layout.astro";
+import fs from "node:fs";
+import path from "node:path";
+
+let meta: any = {};
+const metaPath = path.join(process.cwd(), "public", "data", "meta.json");
+if (fs.existsSync(metaPath)) {
+  meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
+}
+---
+
+<Layout title="Data Sources">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6">Data Sources &amp; Licensing</h1>
+
+  <div class="space-y-6">
+    <section class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-xl font-bold mb-3">Kaggle Metacritic Dataset</h2>
+      <p class="text-gray-600 mb-2">
+        The primary data source for game metadata and critic review scores. This open dataset
+        contains approximately 321,000 individual review entries across 12,000+ games from 500+ media outlets.
+      </p>
+      <ul class="list-disc pl-6 text-gray-600 text-sm space-y-1">
+        <li>Contains: game titles, media outlet names, review text excerpts, numeric scores</li>
+        <li>Does NOT contain: full review articles, reviewer names, review URLs</li>
+        <li>Original source: Kaggle (publicly available dataset)</li>
+        <li>License: Public dataset for research use</li>
+      </ul>
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-xl font-bold mb-3">OpenCritic Data</h2>
+      <p class="text-gray-600 mb-2">
+        Used for enhanced review-level data with individual critic reviews, outlet information,
+        reviewer names, and review links. Currently using mock data for demonstration.
+      </p>
+      <ul class="list-disc pl-6 text-gray-600 text-sm space-y-1">
+        <li>API integration planned for when API key is available</li>
+        <li>Mock data used for 25 popular games as proof-of-concept</li>
+        <li>Each review retains its provenance URL for attribution</li>
+      </ul>
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-xl font-bold mb-3">Our Data Practices</h2>
+      <div class="space-y-3 text-gray-600 text-sm">
+        <p><strong>What we store:</strong> Structured fields (scores, dates, platform, language), short summaries, and links to original reviews.</p>
+        <p><strong>What we don't store:</strong> Full copyrighted review text. Only structured data and brief excerpts.</p>
+        <p><strong>Attribution:</strong> Every review entry retains a provenance URL linking to the original source. Original scores are credited to their respective outlets.</p>
+        <p><strong>Purpose:</strong> This site is for research, demonstration, and score aggregation experiments only.</p>
+        <p><strong>Data freshness:</strong> Data was collected and processed on {meta.build_timestamp ? new Date(meta.build_timestamp).toLocaleDateString() : "an earlier date"}. This is a static snapshot, not a live feed.</p>
+      </div>
+    </section>
+
+    <section class="bg-amber-50 rounded-xl border border-amber-200 p-6">
+      <h2 class="text-xl font-bold text-amber-800 mb-2">Copyright Notice</h2>
+      <p class="text-amber-700 text-sm">
+        All review content, scores, and metadata belong to their respective owners.
+        IMS Games only stores structured data and brief excerpts for aggregation purposes.
+        Full review content is available at the original source URLs.
+        This project is not affiliated with Metacritic, OpenCritic, or any game publisher.
+      </p>
+    </section>
+  </div>
+</Layout>

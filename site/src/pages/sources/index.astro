@@ -1,0 +1,50 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import fs from "node:fs";
+import path from "node:path";
+
+let sources: any[] = [];
+const sourcesPath = path.join(process.cwd(), "public", "data", "sources.json");
+if (fs.existsSync(sourcesPath)) {
+  sources = JSON.parse(fs.readFileSync(sourcesPath, "utf-8"));
+}
+---
+
+<Layout title="Sources">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Media Sources</h1>
+  <p class="text-gray-600 mb-6">All review sources tracked by IMS Games, with historical performance metrics.</p>
+
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-600 text-left">
+        <tr>
+          <th class="px-4 py-3 font-medium">Source</th>
+          <th class="px-4 py-3 font-medium">Type</th>
+          <th class="px-4 py-3 font-medium">Language</th>
+          <th class="px-4 py-3 font-medium">Region</th>
+          <th class="px-4 py-3 font-medium text-right">Reviews</th>
+          <th class="px-4 py-3 font-medium text-right">Avg Score</th>
+          <th class="px-4 py-3 font-medium text-right">Weight</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sources.map((s: any) => (
+          <tr class="border-t border-gray-100 hover:bg-gray-50">
+            <td class="px-4 py-3">
+              <a href={`/sources/${s.source_id}`} class="text-ims-700 hover:text-ims-500 font-medium">
+                {s.name}
+              </a>
+            </td>
+            <td class="px-4 py-3 text-gray-500">{s.source_type || "—"}</td>
+            <td class="px-4 py-3 text-gray-500">{s.language || "—"}</td>
+            <td class="px-4 py-3 text-gray-500">{s.country_region || "—"}</td>
+            <td class="px-4 py-3 text-right text-gray-600">{s.review_count.toLocaleString()}</td>
+            <td class="px-4 py-3 text-right font-mono">{s.mean_score != null ? s.mean_score.toFixed(1) : "N/A"}</td>
+            <td class="px-4 py-3 text-right font-mono">{s.base_weight != null ? s.base_weight.toFixed(3) : "N/A"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-sm text-gray-400 mt-4">{sources.length} sources total</p>
+</Layout>

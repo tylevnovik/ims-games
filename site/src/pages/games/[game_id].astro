@@ -1,0 +1,24 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import GameDetailClient from "../../components/GameDetailClient";
+import fs from "node:fs";
+import path from "node:path";
+
+export function getStaticPaths() {
+  const dir = path.join(process.cwd(), "public", "data", "games");
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter((f: string) => f.endsWith(".json"))
+    .map((f: string) => ({
+      params: { game_id: f.replace(".json", "") },
+    }));
+}
+
+const { game_id } = Astro.params;
+const filePath = path.join(process.cwd(), "public", "data", "games", `${game_id}.json`);
+const game = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+---
+
+<Layout title={game.title}>
+  <GameDetailClient client:load game={game} />
+</Layout>

@@ -1,0 +1,114 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Methodology">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6">Algorithm &amp; Methodology</h1>
+
+  <div class="prose prose-gray max-w-none">
+    <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <h2 class="text-xl font-bold mb-3">Data Sources</h2>
+      <p class="text-gray-600 mb-2">IMS Games aggregates reviews from multiple transparent sources:</p>
+      <ul class="list-disc pl-6 text-gray-600 space-y-1">
+        <li><strong>Metacritic Kaggle Dataset</strong> — 12,000+ games with historical critic review scores</li>
+        <li><strong>OpenCritic</strong> — API or mock data providing individual critic reviews with outlet info</li>
+        <li>Future sources: Steam reviews, IGDB, Chinese gaming media, video reviewers</li>
+      </ul>
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <h2 class="text-xl font-bold mb-3">Score Normalization</h2>
+      <p class="text-gray-600 mb-3">All scores are converted to a uniform 0–100 scale using documented rules:</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <div class="bg-gray-50 rounded-lg p-3"><strong>8/10</strong> &rarr; 80</div>
+        <div class="bg-gray-50 rounded-lg p-3"><strong>4/5</strong> &rarr; 80</div>
+        <div class="bg-gray-50 rounded-lg p-3"><strong>85/100</strong> &rarr; 85</div>
+        <div class="bg-gray-50 rounded-lg p-3"><strong>A</strong> &rarr; 90</div>
+        <div class="bg-gray-50 rounded-lg p-3"><strong>A-</strong> &rarr; 87</div>
+        <div class="bg-gray-50 rounded-lg p-3"><strong>B+</strong> &rarr; 83</div>
+        <div class="bg-gray-50 rounded-lg p-3"><strong>B</strong> &rarr; 80</div>
+        <div class="bg-gray-50 rounded-lg p-3"><strong>C</strong> &rarr; 70</div>
+      </div>
+      <p class="text-sm text-gray-500 mt-3">Non-numeric scores (e.g., "Recommended") are excluded from numeric averages.</p>
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <h2 class="text-xl font-bold mb-3">Score Types</h2>
+      <div class="space-y-4">
+        <div class="border-l-4 border-blue-400 pl-4">
+          <h3 class="font-bold text-gray-800">IMS Raw Score</h3>
+          <p class="text-gray-600 text-sm">Simple average of all valid normalized review scores. <code>mean(normalized_score)</code></p>
+        </div>
+        <div class="border-l-4 border-blue-400 pl-4">
+          <h3 class="font-bold text-gray-800">IMS Median Score</h3>
+          <p class="text-gray-600 text-sm">Median of all normalized scores. Less sensitive to outliers.</p>
+        </div>
+        <div class="border-l-4 border-emerald-400 pl-4">
+          <h3 class="font-bold text-gray-800">IMS Robust Score</h3>
+          <p class="text-gray-600 text-sm">Trimmed mean: removes top 5% and bottom 5% of scores before averaging (requires &ge;20 reviews).</p>
+        </div>
+        <div class="border-l-4 border-purple-400 pl-4">
+          <h3 class="font-bold text-gray-800">IMS Calibrated Score</h3>
+          <p class="text-gray-600 text-sm">
+            Adjusts for each source's historical scoring tendency. A source that always scores high
+            gets downward-adjusted; a strict source gets upward-adjusted. Uses z-score calibration:
+            <code>calibrated = global_mean + z * global_std</code>
+          </p>
+        </div>
+        <div class="border-l-4 border-ims-500 pl-4">
+          <h3 class="font-bold text-gray-800">IMS Weighted Score</h3>
+          <p class="text-gray-600 text-sm">
+            Weighted average using transparent source weights. Weights consider sample size,
+            discrimination power, genre/platform relevance, and disclosure completeness.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <h2 class="text-xl font-bold mb-3">Media Weight Formula</h2>
+      <p class="text-gray-600 mb-3">Each source's weight is computed as:</p>
+      <div class="bg-gray-50 rounded-lg p-4 font-mono text-sm mb-3">
+        context_weight = base_weight &times; sample_confidence &times; discrimination_factor
+        &times; genre_relevance &times; platform_relevance &times; disclosure_factor
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border border-gray-200 rounded-lg">
+          <thead class="bg-gray-50"><tr>
+            <th class="px-3 py-2 text-left font-medium">Component</th>
+            <th class="px-3 py-2 text-left font-medium">Range</th>
+            <th class="px-3 py-2 text-left font-medium">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t"><td class="px-3 py-2 font-medium">base_weight</td><td class="px-3 py-2">1.0</td><td class="px-3 py-2 text-gray-600">Starting weight for all sources</td></tr>
+            <tr class="border-t"><td class="px-3 py-2 font-medium">sample_confidence</td><td class="px-3 py-2">0.6–1.1</td><td class="px-3 py-2 text-gray-600">More historical reviews = higher confidence</td></tr>
+            <tr class="border-t"><td class="px-3 py-2 font-medium">discrimination_factor</td><td class="px-3 py-2">0.7–1.1</td><td class="px-3 py-2 text-gray-600">Sources with more score variance get higher weight</td></tr>
+            <tr class="border-t"><td class="px-3 py-2 font-medium">genre_relevance</td><td class="px-3 py-2">0.8–1.2</td><td class="px-3 py-2 text-gray-600">More reviews in the game's genre = higher relevance</td></tr>
+            <tr class="border-t"><td class="px-3 py-2 font-medium">platform_relevance</td><td class="px-3 py-2">0.8–1.1</td><td class="px-3 py-2 text-gray-600">More reviews on the game's platform = higher relevance</td></tr>
+            <tr class="border-t"><td class="px-3 py-2 font-medium">disclosure_factor</td><td class="px-3 py-2">0.9–1.05</td><td class="px-3 py-2 text-gray-600">Review code/sponsorship disclosure slightly boosts weight</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <h2 class="text-xl font-bold mb-3">External Baseline vs IMS Scores</h2>
+      <p class="text-gray-600">
+        Metacritic and OpenCritic scores are displayed as <strong>external baselines only</strong>.
+        They are never mixed into IMS algorithm scores. The page clearly distinguishes between
+        external reference scores and IMS transparent scores.
+      </p>
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-xl font-bold mb-3">Known Limitations (v0.1)</h2>
+      <ul class="list-disc pl-6 text-gray-600 space-y-1 text-sm">
+        <li>Genre and platform data is incomplete for many older games</li>
+        <li>Letter grade conversions use a fixed mapping</li>
+        <li>Calibration requires &ge;10 reviews per source</li>
+        <li>Weight components use simplified formulas; future versions may use more sophisticated models</li>
+        <li>Video creators and Chinese media are not yet included</li>
+      </ul>
+    </section>
+  </div>
+</Layout>
