@@ -13,9 +13,11 @@ let games: any[] = [];
 const gamesPath = path.join(process.cwd(), "public", "data", "games.json");
 if (fs.existsSync(gamesPath)) {
   const all = JSON.parse(fs.readFileSync(gamesPath, "utf-8"));
-  // Only pass games within award years, strip heavy fields
+  // Pass games within award years OR with null year (needed for award matching)
   games = all
-    .filter((g: any) => g.release_year >= minY && g.release_year <= maxY && g.ims_weighted != null)
+    .filter((g: any) => g.ims_weighted != null && (
+      g.release_year == null || (g.release_year >= minY && g.release_year <= maxY)
+    ))
     .map((g: any) => ({
       game_id: g.game_id,
       title: g.title,

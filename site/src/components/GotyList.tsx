@@ -21,40 +21,33 @@ function normalise(s: string): string {
 
 function findGame(title: string, games: GameSummary[]): GameSummary | null {
   const n = normalise(title);
-  const nWords = n.split(" ").filter((w) => w.length >= 3);
 
   // 1. Exact normalised match
   const exact = games.find((g) => normalise(g.title) === n);
   if (exact) return exact;
 
-  // 2. Game title contains award title (length-filtered)
-  const contains = games.find((g) => {
+  // 2. Game title starts with award title (handles "BG3" → "Baldur's Gate 3")
+  const startsWith = games.find((g) => {
     const gn = normalise(g.title);
-    if (gn.includes(n)) {
-      return gn.length <= n.length * 2.5;
-    }
-    return false;
+    return gn.startsWith(n) && gn.length <= n.length * 2;
   });
-  if (contains) return contains;
+  if (startsWith) return startsWith;
 
-  // 3. Award title contains game title (length-filtered)
-  const reverseContains = games.find((g) => {
+  // 3. Award title starts with game title (e.g. "The Witcher 3: Wild Hunt" → "The Witcher 3")
+  const reverseStarts = games.find((g) => {
     const gn = normalise(g.title);
-    if (n.includes(gn)) {
-      return n.length <= gn.length * 2.5;
-    }
-    return false;
+    return n.startsWith(gn) && n.length <= gn.length * 2;
   });
-  if (reverseContains) return reverseContains;
+  if (reverseStarts) return reverseStarts;
 
-  // 4. Word overlap — all significant award words must appear in game title
+  // 4. High word overlap (≥80% of game words must appear in award)
+  const nWords = n.split(" ").filter((w) => w.length >= 3);
   if (nWords.length >= 1) {
     const wordMatch = games.find((g) => {
       const gn = normalise(g.title);
       const gWords = gn.split(" ").filter((w) => w.length >= 3);
-      if (!nWords.every((w) => gWords.includes(w))) return false;
-      const ratio = gWords.length / nWords.length;
-      return ratio >= 0.5 && ratio <= 2.5;
+      const matched = gWords.filter((w) => nWords.includes(w)).length;
+      return matched / gWords.length >= 0.8;
     });
     if (wordMatch) return wordMatch;
   }
