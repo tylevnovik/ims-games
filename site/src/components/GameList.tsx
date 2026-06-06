@@ -104,7 +104,7 @@ export default function GameList({ games }: Props) {
             {paged.map((g) => (
               <tr key={g.game_id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-2">
-                  <a href={`/games/${g.game_id}`} className="text-ims-700 hover:text-ims-500 font-medium">{g.title}</a>
+                  <a href={`${import.meta.env.BASE_URL}games/${g.game_id}`} className="text-ims-700 hover:text-ims-500 font-medium">{g.title}</a>
                   <div className="text-xs text-gray-400 mt-0.5">{(g.genres || []).slice(0, 2).join(", ")}</div>
                 </td>
                 <td className="px-4 py-2 text-gray-500">{g.release_year || "—"}</td>

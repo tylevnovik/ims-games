@@ -60,7 +60,7 @@ try {
   <section class="mb-12">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-2xl font-bold text-gray-800" data-i18n="home.top_games">高分游戏</h2>
-      <a href="/games" class="text-sm text-ims-600 hover:text-ims-500 font-medium" data-i18n="home.view_all">查看全部 &rarr;</a>
+      <a href={`${import.meta.env.BASE_URL}games`} class="text-sm text-ims-600 hover:text-ims-500 font-medium" data-i18n="home.view_all">查看全部 &rarr;</a>
     </div>
     {topGames.length > 0 ? (
       <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -80,7 +80,7 @@ try {
               <tr class="border-t border-gray-100 hover:bg-gray-50">
                 <td class="px-4 py-3 text-gray-400">{i + 1}</td>
                 <td class="px-4 py-3">
-                  <a href={`/games/${game.game_id}`} class="text-ims-700 hover:text-ims-500 font-medium">
+                  <a href={`${import.meta.env.BASE_URL}games/${game.game_id}`} class="text-ims-700 hover:text-ims-500 font-medium">
                     {game.title}
                   </a>
                   {game.release_year && <span class="text-gray-400 ml-1">({game.release_year})</span>}
@@ -103,13 +103,13 @@ try {
   </section>
 
   <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-    <a href="/methodology" class="bg-white rounded-xl border border-gray-200 p-6 hover:border-ims-300 hover:shadow-sm transition-all">
+    <a href={`${import.meta.env.BASE_URL}methodology`} class="bg-white rounded-xl border border-gray-200 p-6 hover:border-ims-300 hover:shadow-sm transition-all">
       <h3 class="text-lg font-bold text-gray-800 mb-2" data-i18n="home.card.methodology">算法与方法论</h3>
       <p class="text-sm text-gray-600" data-i18n="home.card.methodology_desc">
         了解 IMS 原始分、稳健分、校准分和加权分的计算方式。所有规则均公开文档化。
       </p>
     </a>
-    <a href="/data-sources" class="bg-white rounded-xl border border-gray-200 p-6 hover:border-ims-300 hover:shadow-sm transition-all">
+    <a href={`${import.meta.env.BASE_URL}data-sources`} class="bg-white rounded-xl border border-gray-200 p-6 hover:border-ims-300 hover:shadow-sm transition-all">
       <h3 class="text-lg font-bold text-gray-800 mb-2" data-i18n="home.card.data_sources">数据来源与授权</h3>
       <p class="text-sm text-gray-600" data-i18n="home.card.data_sources_desc">
         了解我们的数据来源、采集方式以及署名与授权策略。

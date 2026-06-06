@@ -20,7 +20,7 @@ export default function GameDetailClient({ gameId }: Props) {
   useEffect(() => {
     setLoading(true);
     setError(false);
-    fetch(`/data/games/${gameId}.json`)
+    fetch(`${import.meta.env.BASE_URL}data/games/${gameId}.json`)
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => { setGame(data); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
