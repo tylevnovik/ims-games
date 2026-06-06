@@ -34,26 +34,23 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --frozen
 
-      # ── Data cache ──
-      - name: Cache data directory
-        uses: actions/cache@v4
-        id: data-cache
-        with:
-          path: data/db
-          key: ims-db-${{ hashFiles('scripts/*.py') }}
-
-      # ── Run pipeline (only if no cached DB) ──
-      - name: Run data pipeline
-        if: steps.data-cache.outputs.cache-hit != 'true'
+      # ── Download pre-built database from GitHub Release ──
+      - name: Download database from Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "No cached database found."
-          echo "Please ensure data/metacritic/reviews.csv is available."
-          if [ ! -f data/metacritic/reviews.csv ]; then
-            echo "ERROR: data/metacritic/reviews.csv not found!"
-            echo "Upload the Kaggle Metacritic dataset to data/metacritic/ before running."
+          mkdir -p data/db
+          gh release download data-v0.1.0 \
+            --repo ${{ github.repository }} \
+            --pattern "ims_games.sqlite" \
+            --dir data/db/ \
+            --clobber || {
+            echo "ERROR: Could not download database from release data-v0.1.0"
+            echo "Make sure the release exists with the ims_games.sqlite asset."
+            echo "Create it with: gh release create data-v0.1.0 data/db/ims_games.sqlite"
             exit 1
-          fi
-          uv run python scripts/build_all.py
+          }
+          ls -lh data/db/ims_games.sqlite
 
       - name: Export static JSON
         run: uv run python scripts/export_static_json.py
