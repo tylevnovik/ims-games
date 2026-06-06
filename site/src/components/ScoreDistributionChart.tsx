@@ -59,7 +59,7 @@ export default function ScoreDistributionChart({ reviews }: Props) {
                 }}
               />
               {/* Tooltip */}
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 touch:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                 {b.lo}-{b.hi}: {b.count} ({totalScores > 0 ? Math.round((b.count / totalScores) * 100) : 0}%)
               </div>
             </div>
@@ -70,7 +70,7 @@ export default function ScoreDistributionChart({ reviews }: Props) {
       {/* X-axis labels */}
       <div className="flex gap-0.5 mt-1">
         {buckets.map((b, i) => (
-          <div key={i} className="flex-1 text-center text-[9px] text-gray-400 leading-none">
+          <div key={i} className="flex-1 text-center text-[10px] sm:text-[9px] text-gray-400 leading-none">
             {i % 2 === 0 ? b.lo : ""}
           </div>
         ))}

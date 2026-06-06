@@ -24,7 +24,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         <a href={base} class="flex items-center gap-2 font-bold text-xl text-ims-700 hover:text-ims-500 transition-colors">
           <span class="text-2xl">&#9670;</span> IMS Games
         </a>
-        <div class="flex items-center gap-6 text-sm font-medium text-gray-600">
+        <!-- Hamburger button (mobile only) -->
+        <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-600 hover:text-ims-600 transition-colors" aria-label="Toggle menu">
+          <span class="text-2xl leading-none">&#9776;</span>
+        </button>
+        <!-- Desktop nav -->
+        <div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
           <a href={`${base}/games`} data-i18n="nav.games" class="hover:text-ims-600 transition-colors">游戏库</a>
           <a href={`${base}/sources`} data-i18n="nav.sources" class="hover:text-ims-600 transition-colors">媒体源</a>
           <a href={`${base}/methodology`} data-i18n="nav.methodology" class="hover:text-ims-600 transition-colors">算法说明</a>
@@ -32,6 +37,16 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
           <button id="lang-toggle" class="px-2 py-1 text-xs font-bold border border-gray-300 rounded hover:bg-gray-50 transition-colors">中</button>
         </div>
       </nav>
+      <!-- Mobile nav drawer -->
+      <div id="mobile-menu" class="hidden md:hidden border-t border-gray-200 bg-white">
+        <div class="max-w-7xl mx-auto px-4 py-3 space-y-2 text-sm font-medium text-gray-600">
+          <a href={`${base}/games`} data-i18n="nav.games" class="block py-2 hover:text-ims-600 transition-colors">游戏库</a>
+          <a href={`${base}/sources`} data-i18n="nav.sources" class="block py-2 hover:text-ims-600 transition-colors">媒体源</a>
+          <a href={`${base}/methodology`} data-i18n="nav.methodology" class="block py-2 hover:text-ims-600 transition-colors">算法说明</a>
+          <a href={`${base}/data-sources`} data-i18n="nav.data_sources" class="block py-2 hover:text-ims-600 transition-colors">数据来源</a>
+          <button id="lang-toggle-mobile" class="mt-1 px-2 py-1 text-xs font-bold border border-gray-300 rounded hover:bg-gray-50 transition-colors">中</button>
+        </div>
+      </div>
     </header>
 
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
@@ -197,6 +212,40 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
             );
           });
         }
+
+        // Mobile hamburger menu toggle
+        var menuBtn = document.getElementById("mobile-menu-btn");
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (menuBtn && mobileMenu) {
+          menuBtn.addEventListener("click", function () {
+            mobileMenu.classList.toggle("hidden");
+          });
+        }
+
+        // Mobile lang toggle (sync with desktop)
+        var mobileToggleBtn = document.getElementById("lang-toggle-mobile");
+        if (mobileToggleBtn) {
+          // Sync initial text
+          mobileToggleBtn.textContent = getLang() === "zh" ? "\u4E2D" : "EN";
+          mobileToggleBtn.addEventListener("click", function () {
+            var newLang = getLang() === "zh" ? "en" : "zh";
+            localStorage.setItem("ims-lang", newLang);
+            applyTranslations(newLang);
+            updateToggle(newLang);
+            mobileToggleBtn.textContent = newLang === "zh" ? "\u4E2D" : "EN";
+            updateHtmlLang(newLang);
+            window.dispatchEvent(
+              new CustomEvent("ims-lang-change", { detail: newLang })
+            );
+          });
+        }
+
+        // Listen for lang changes to sync mobile toggle
+        window.addEventListener("ims-lang-change", function (e) {
+          var lang = e.detail;
+          var mt = document.getElementById("lang-toggle-mobile");
+          if (mt) mt.textContent = lang === "zh" ? "\u4E2D" : "EN";
+        });
 
         // Listen for lang changes from other sources
         window.addEventListener("ims-lang-change", function (e) {

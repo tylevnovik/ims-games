@@ -81,7 +81,7 @@ export default function ReviewTable({ reviews }: Props) {
           placeholder={t("review.search_source")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-56 focus:outline-none focus:ring-2 focus:ring-ims-400"
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-ims-400"
         />
         {allLangs.length > 1 && (
           <select value={langFilter} onChange={(e) => setLangFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
@@ -120,10 +120,10 @@ export default function ReviewTable({ reviews }: Props) {
               <th className="px-3 py-2 font-medium cursor-pointer select-none hover:text-ims-600" onClick={() => toggleSort("date")}>
                 {t("review.date")}{sortIcon("date")}
               </th>
-              <th className="px-3 py-2 font-medium cursor-pointer select-none hover:text-ims-600" onClick={() => toggleSort("language")}>
+              <th className="px-3 py-2 font-medium cursor-pointer select-none hover:text-ims-600 hidden sm:table-cell" onClick={() => toggleSort("language")}>
                 {t("review.lang")}{sortIcon("language")}
               </th>
-              <th className="px-3 py-2 font-medium">{t("review.summary")}</th>
+              <th className="px-3 py-2 font-medium hidden md:table-cell">{t("review.summary")}</th>
             </tr>
           </thead>
           <tbody>
@@ -141,8 +141,8 @@ export default function ReviewTable({ reviews }: Props) {
                 <td className="px-3 py-2 text-right font-mono font-bold">{formatScore(r.score)}</td>
                 <td className="px-3 py-2 text-right font-mono text-gray-500">{r.weight != null ? r.weight.toFixed(3) : "—"}</td>
                 <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{r.date || "—"}</td>
-                <td className="px-3 py-2 text-gray-500">{r.language || "—"}</td>
-                <td className="px-3 py-2 text-gray-600 max-w-[300px] truncate">
+                <td className="px-3 py-2 text-gray-500 hidden sm:table-cell">{r.language || "—"}</td>
+                <td className="px-3 py-2 text-gray-600 max-w-[300px] truncate hidden md:table-cell">
                   {r.summary ? <span title={r.summary}>{r.summary.length > 100 ? r.summary.slice(0, 100) + "..." : r.summary}</span> : "—"}
                 </td>
               </tr>

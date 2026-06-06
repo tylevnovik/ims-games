@@ -95,7 +95,7 @@ export default function GameList({ games }: Props) {
           placeholder={t("games.search")}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-ims-400"
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-ims-400"
         />
         <select value={yearFilter} onChange={(e) => { setYearFilter(e.target.value); setPage(0); }} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
           <option value="">{t("games.all_years")}</option>

@@ -33,7 +33,7 @@ try {
 
 <Layout title="首页">
   <section class="text-center mb-12">
-    <h1 class="text-4xl font-bold text-gray-900 mb-4">
+    <h1 class="text-2xl sm:text-4xl font-bold text-gray-900 mb-4">
       <span class="text-ims-600">IMS Games</span> &mdash; <span data-i18n="home.subtitle">透明游戏评分</span>
     </h1>
     <p class="text-lg text-gray-600 max-w-2xl mx-auto" data-i18n="home.description">
@@ -64,7 +64,7 @@ try {
       <a href={`${base}/games`} class="text-sm text-ims-600 hover:text-ims-500 font-medium" data-i18n="home.view_all">查看全部 &rarr;</a>
     </div>
     {topGames.length > 0 ? (
-      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         <table id="top-games-table" class="w-full text-sm">
           <thead class="bg-gray-50 text-gray-600 text-left">
             <tr>

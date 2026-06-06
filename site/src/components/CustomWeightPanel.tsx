@@ -88,7 +88,7 @@ export default function CustomWeightPanel({ config, onChange, result, languages,
             </details>
           )}
 
-          <div className="bg-ims-50 border border-ims-200 rounded-lg p-3 flex items-center justify-between">
+          <div className="bg-ims-50 border border-ims-200 rounded-lg p-3 flex items-center justify-between flex-wrap gap-2">
             <div>
               <span className="text-sm text-gray-600">{t("custom.custom_score")}</span>
               <span className="text-xl font-bold text-ims-700">{result.count > 0 ? result.score.toFixed(1) : t("score.na")}</span>
