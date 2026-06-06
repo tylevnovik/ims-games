@@ -51,7 +51,7 @@ export default function ScoreDistributionChart({ reviews }: Props) {
         {buckets.map((b, i) => {
           const pct = (b.count / maxCount) * 100;
           return (
-            <div key={i} className="flex-1 flex flex-col items-center group relative">
+            <div key={i} className="flex-1 h-full flex flex-col items-center justify-end group relative">
               <div
                 className={`w-full ${colors[i]} rounded-t-sm transition-all duration-200`}
                 style={{
