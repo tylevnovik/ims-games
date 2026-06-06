@@ -266,60 +266,6 @@ export const GOTY_AWARDS: YearData[] = [
       },
     ],
   },
-  // ── 2024 ──────────────────────────────────────────────
-  {
-    year: 2024,
-    awards: [
-      {
-        show: "TGA",
-        winner: "Astro Bot",
-        nominees: [
-          "Balatro",
-          "Black Myth: Wukong",
-          "Elden Ring: Shadow of the Erdtree",
-          "Final Fantasy VII Rebirth",
-          "Metaphor: ReFantazio",
-        ],
-      },
-      {
-        show: "BAFTA",
-        winner: "Astro Bot",
-        nominees: [],
-      },
-      {
-        show: "GDC",
-        winner: "Balatro",
-        nominees: [],
-      },
-    ],
-  },
-  // ── 2025 ──────────────────────────────────────────────
-  {
-    year: 2025,
-    awards: [
-      {
-        show: "TGA",
-        winner: "Clair Obscur: Expedition 33",
-        nominees: [
-          "Death Stranding 2",
-          "Donkey Kong Bananza",
-          "Hades II",
-          "Hollow Knight: Silksong",
-          "Kingdom Come: Deliverance II",
-        ],
-      },
-      {
-        show: "BAFTA",
-        winner: "Clair Obscur: Expedition 33",
-        nominees: [],
-      },
-      {
-        show: "GDC",
-        winner: "Clair Obscur: Expedition 33",
-        nominees: [],
-      },
-    ],
-  },
 ];
 
 /** All unique game titles mentioned across every award (for matching). */
