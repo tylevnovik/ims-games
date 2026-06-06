@@ -1,0 +1,91 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Python setup ──
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.x"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install Python dependencies
+        run: uv sync --frozen
+
+      # ── Data cache ──
+      - name: Cache data directory
+        uses: actions/cache@v4
+        id: data-cache
+        with:
+          path: data/db
+          key: ims-db-${{ hashFiles('scripts/*.py') }}
+
+      # ── Run pipeline (only if no cached DB) ──
+      - name: Run data pipeline
+        if: steps.data-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "No cached database found."
+          echo "Please ensure data/metacritic/reviews.csv is available."
+          if [ ! -f data/metacritic/reviews.csv ]; then
+            echo "ERROR: data/metacritic/reviews.csv not found!"
+            echo "Upload the Kaggle Metacritic dataset to data/metacritic/ before running."
+            exit 1
+          fi
+          uv run python scripts/build_all.py
+
+      - name: Export static JSON
+        run: uv run python scripts/export_static_json.py
+
+      # ── Node / Astro build ──
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install Node dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Build Astro site
+        working-directory: site
+        run: npx astro build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
