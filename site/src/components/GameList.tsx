@@ -12,6 +12,7 @@ export default function GameList({ games }: Props) {
   const [search, setSearch] = useState("");
   const [yearFilter, setYearFilter] = useState<string>("");
   const [genreFilter, setGenreFilter] = useState<string>("");
+  const [platformFilter, setPlatformFilter] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("ims_weighted");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
@@ -27,6 +28,12 @@ export default function GameList({ games }: Props) {
     const genres = new Set<string>();
     games.forEach((g) => (g.genres || []).forEach((x) => genres.add(x)));
     return [...genres].sort();
+  }, [games]);
+
+  const allPlatforms = useMemo(() => {
+    const plats = new Set<string>();
+    games.forEach((g) => (g.platforms || []).forEach((p) => plats.add(p)));
+    return [...plats].sort();
   }, [games]);
 
   const toggleSort = (field: string) => {
@@ -58,6 +65,9 @@ export default function GameList({ games }: Props) {
     if (genreFilter) {
       result = result.filter((g) => (g.genres || []).includes(genreFilter));
     }
+    if (platformFilter) {
+      result = result.filter((g) => (g.platforms || []).includes(platformFilter));
+    }
     result = [...result].sort((a: any, b: any) => {
       if (stringFields.has(sortBy)) {
         const va = (a[sortBy] ?? "") as string;
@@ -69,7 +79,7 @@ export default function GameList({ games }: Props) {
       return sortDir === "desc" ? (vb as number) - (va as number) : (va as number) - (vb as number);
     });
     return result;
-  }, [games, search, yearFilter, genreFilter, sortBy, sortDir]);
+  }, [games, search, yearFilter, genreFilter, platformFilter, sortBy, sortDir]);
 
   const paged = filtered.slice(page * perPage, (page + 1) * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
@@ -95,6 +105,10 @@ export default function GameList({ games }: Props) {
           <option value="">{t("games.all_genres")}</option>
           {allGenres.map((g) => <option key={g} value={g}>{g}</option>)}
         </select>
+        <select value={platformFilter} onChange={(e) => { setPlatformFilter(e.target.value); setPage(0); }} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+          <option value="">{t("games.all_platforms")}</option>
+          {allPlatforms.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
       </div>
 
       <p className="text-sm text-gray-500 mb-3">{filtered.length.toLocaleString()} {t("games.found")}</p>
@@ -117,7 +131,11 @@ export default function GameList({ games }: Props) {
               <tr key={g.game_id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-2">
                   <a href={`${base}/games/${g.game_id}`} className="text-ims-700 hover:text-ims-500 font-medium">{g.title}</a>
-                  <div className="text-xs text-gray-400 mt-0.5">{(g.genres || []).slice(0, 2).join(", ")}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {g.developer && <span>{g.developer}</span>}
+                    {g.developer && (g.genres || []).length > 0 && <span> &middot; </span>}
+                    {(g.genres || []).slice(0, 2).join(", ")}
+                  </div>
                 </td>
                 <td className="px-4 py-2 text-gray-500">{g.release_year || "—"}</td>
                 <td className="px-4 py-2 text-right font-mono text-gray-600">{fmt(g.metacritic_score)}</td>

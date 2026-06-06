@@ -140,6 +140,7 @@ const dict: Record<string, { zh: string; en: string }> = {
   "games.search": { zh: "搜索游戏...", en: "Search games..." },
   "games.all_years": { zh: "所有年份", en: "All Years" },
   "games.all_genres": { zh: "所有类型", en: "All Genres" },
+  "games.all_platforms": { zh: "所有平台", en: "All Platforms" },
   "games.sort_weighted": { zh: "排序：IMS 加权", en: "Sort: IMS Weighted" },
   "games.sort_raw": { zh: "排序：IMS 原始", en: "Sort: IMS Raw" },
   "games.sort_robust": { zh: "排序：IMS 稳健", en: "Sort: IMS Robust" },

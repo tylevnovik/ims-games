@@ -6,8 +6,9 @@ export interface GameSummary {
   publisher: string | null;
   genres: string[];
   platforms: string[];
+  description: string | null;
   metacritic_score: number | null;
-  opencritic_score: number | null;
+  rawg_metacritic_score: number | null;
   ims_raw: number | null;
   ims_robust: number | null;
   ims_calibrated: number | null;
