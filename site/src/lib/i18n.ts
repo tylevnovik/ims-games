@@ -102,6 +102,10 @@ const dict: Record<string, { zh: string; en: string }> = {
   "review.lang": { zh: "语言", en: "Lang" },
   "review.summary": { zh: "摘要", en: "Summary" },
   "review.none": { zh: "暂无评论。", en: "No reviews available." },
+  "review.search_source": { zh: "搜索媒体来源...", en: "Search source..." },
+  "review.all_langs": { zh: "所有语言", en: "All Languages" },
+  "review.all_platforms": { zh: "所有平台", en: "All Platforms" },
+  "review.showing": { zh: "条评论", en: "reviews" },
 
   // Source detail
   "source.total_reviews": { zh: "总评论数", en: "Total Reviews" },
