@@ -10,7 +10,9 @@ export function computeCustomScore(
     filtered = filtered.filter((r) => r.language === config.languageFilter);
   }
   if (config.platformFilter) {
-    filtered = filtered.filter((r) => r.platform != null && r.platform === config.platformFilter);
+    filtered = filtered.filter(
+      (r) => r.platform != null && r.platform.split("|").includes(config.platformFilter!)
+    );
   }
   if (config.disabledSources.size > 0) {
     filtered = filtered.filter((r) => !config.disabledSources.has(r.source_name || ""));

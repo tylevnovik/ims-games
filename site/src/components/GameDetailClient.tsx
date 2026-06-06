@@ -117,7 +117,7 @@ export default function GameDetailClient({ gameId }: Props) {
           onChange={setCustomConfig}
           result={customResult}
           languages={Object.keys(game.language_distribution || {})}
-          platforms={[...new Set((game.reviews || []).map((r) => r.platform).filter(Boolean) as string[])]}
+          platforms={[...new Set((game.reviews || []).flatMap((r) => (r.platform || "").split("|").filter(Boolean)))]}
           sources={[...new Set((game.reviews || []).map((r) => r.source_name || "").filter(Boolean))]}
         />
       </div>

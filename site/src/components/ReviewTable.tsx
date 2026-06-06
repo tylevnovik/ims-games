@@ -23,7 +23,7 @@ export default function ReviewTable({ reviews }: Props) {
 
   const allPlatforms = useMemo(() => {
     const s = new Set<string>();
-    reviews.forEach((r) => r.platform && s.add(r.platform));
+    reviews.forEach((r) => (r.platform || "").split("|").filter(Boolean).forEach((p) => s.add(p)));
     return [...s].sort();
   }, [reviews]);
 
@@ -53,7 +53,7 @@ export default function ReviewTable({ reviews }: Props) {
       result = result.filter((r) => r.language === langFilter);
     }
     if (platformFilter) {
-      result = result.filter((r) => r.platform === platformFilter);
+      result = result.filter((r) => (r.platform || "").split("|").includes(platformFilter));
     }
     result = [...result].sort((a: any, b: any) => {
       if (stringFields.has(sortBy)) {
