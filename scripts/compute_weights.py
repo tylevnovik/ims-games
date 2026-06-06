@@ -1,7 +1,7 @@
 """Generate media weights based on source_metrics.
 
 For every source_metric record, calculates composite weight broken down
-by source + genre + platform with human-readable Chinese explanations.
+by source + genre + platform with human-readable English explanations.
 """
 
 import json
@@ -43,25 +43,25 @@ def _platform_relevance(plat_name, plat_cov, total):
 
 
 def _build_explanation(source_name, genre, platform, sample_count, disc_factor, weight_val):
-    parts = [f"该媒体({source_name})"]
+    parts = [f"{source_name}"]
     if genre:
-        parts.append(f"在 {genre} 类型下")
+        parts.append(f" ({genre})")
     if platform:
-        parts.append(f"({platform} 平台)")
-    parts.append(f"有 {sample_count} 条历史评论")
+        parts.append(f" on {platform}")
+    parts.append(f": {sample_count} historical reviews, ")
     if disc_factor >= 1.0:
-        parts.append("评分区分度较高")
+        parts.append("high score discrimination")
     elif disc_factor >= 0.85:
-        parts.append("评分区分度中等")
+        parts.append("moderate score discrimination")
     else:
-        parts.append("评分区分度较低")
+        parts.append("low score discrimination")
     if sample_count >= 30:
-        parts.append("样本量充足")
+        parts.append(", sufficient sample size")
     elif sample_count >= 10:
-        parts.append("样本量一般")
+        parts.append(", moderate sample size")
     else:
-        parts.append("样本量偏少")
-    parts.append(f"因此本条评论权重为 {weight_val:.2f}")
+        parts.append(", limited sample size")
+    parts.append(f" — final weight: {weight_val:.2f}")
     return "".join(parts)
 
 
