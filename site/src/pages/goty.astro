@@ -1,16 +1,21 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import GotyList from "../components/GotyList";
+import { GOTY_AWARDS } from "../lib/awards-data";
 import fs from "node:fs";
 import path from "node:path";
+
+const awardYears = GOTY_AWARDS.map((y) => y.year);
+const minY = Math.min(...awardYears);
+const maxY = Math.max(...awardYears);
 
 let games: any[] = [];
 const gamesPath = path.join(process.cwd(), "public", "data", "games.json");
 if (fs.existsSync(gamesPath)) {
   const all = JSON.parse(fs.readFileSync(gamesPath, "utf-8"));
-  // Only pass games with year + IMS score, strip heavy fields
+  // Only pass games within award years, strip heavy fields
   games = all
-    .filter((g: any) => g.release_year && g.ims_weighted != null)
+    .filter((g: any) => g.release_year >= minY && g.release_year <= maxY && g.ims_weighted != null)
     .map((g: any) => ({
       game_id: g.game_id,
       title: g.title,
