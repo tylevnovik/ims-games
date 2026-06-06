@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { GameDetail, CustomWeightConfig } from "../lib/types";
 import { computeCustomScore, formatScore, getScoreBg } from "../lib/score";
 import { useLang } from "../lib/i18n";
+import { base } from "../lib/base";
 import ScoreCard from "./ScoreCard";
 import ReviewTable from "./ReviewTable";
 import CustomWeightPanel from "./CustomWeightPanel";
@@ -20,7 +21,7 @@ export default function GameDetailClient({ gameId }: Props) {
   useEffect(() => {
     setLoading(true);
     setError(false);
-    fetch(`${import.meta.env.BASE_URL}data/games/${gameId}.json`)
+    fetch(`${base}/data/games/${gameId}.json`)
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => { setGame(data); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 let sources: any[] = [];
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const sourcesPath = path.join(process.cwd(), "public", "data", "sources.json");
 if (fs.existsSync(sourcesPath)) {
   sources = JSON.parse(fs.readFileSync(sourcesPath, "utf-8"));
@@ -31,7 +32,7 @@ if (fs.existsSync(sourcesPath)) {
         {sources.map((s: any) => (
           <tr class="border-t border-gray-100 hover:bg-gray-50">
             <td class="px-4 py-3">
-              <a href={`${import.meta.env.BASE_URL}sources/${s.source_id}`} class="text-ims-700 hover:text-ims-500 font-medium">
+              <a href={`${base}/sources/${s.source_id}`} class="text-ims-700 hover:text-ims-500 font-medium">
                 {s.name}
               </a>
             </td>
