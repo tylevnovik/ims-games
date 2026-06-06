@@ -137,6 +137,7 @@ const dict: Record<string, { zh: string; en: string }> = {
 
   // Distribution chart
   "chart.score": { zh: "分数", en: "Score" },
+  "chart.mean": { zh: "均值", en: "Mean" },
   "chart.no_data": { zh: "暂无评分数据。", en: "No score data to display." },
 
   // Games list
