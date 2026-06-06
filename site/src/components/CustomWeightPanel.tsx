@@ -57,7 +57,7 @@ export default function CustomWeightPanel({ config, onChange, result, languages,
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={config.excludeOutliers} onChange={() => toggle("excludeOutliers")} className="rounded" />
               {t("custom.exclude_outliers")}
@@ -69,10 +69,6 @@ export default function CustomWeightPanel({ config, onChange, result, languages,
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={config.boostedIndieMedia} onChange={() => toggle("boostedIndieMedia")} className="rounded" />
               {t("custom.boost_indie")}
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={config.recentOnly} onChange={() => toggle("recentOnly")} className="rounded" />
-              {t("custom.recent_only")}
             </label>
           </div>
 

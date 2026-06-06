@@ -9,11 +9,8 @@ export function computeCustomScore(
   if (config.languageFilter) {
     filtered = filtered.filter((r) => r.language === config.languageFilter);
   }
-  if (config.excludeVideoCreators) {
-    // v0.1: no source_type on review level, skip for now
-  }
   if (config.platformFilter) {
-    filtered = filtered.filter((r) => r.platform === config.platformFilter);
+    filtered = filtered.filter((r) => r.platform != null && r.platform === config.platformFilter);
   }
   if (config.disabledSources.size > 0) {
     filtered = filtered.filter((r) => !config.disabledSources.has(r.source_name || ""));

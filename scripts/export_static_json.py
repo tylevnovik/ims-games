@@ -189,6 +189,7 @@ def export_game_details(conn, games):
                 "url": rv["review_url"],
                 "date": rv["review_date"],
                 "language": rv["language"],
+                "platform": rv["platform"],
                 "summary": rv["summary"],
                 "positive_points": rv["positive_points"],
                 "negative_points": rv["negative_points"],

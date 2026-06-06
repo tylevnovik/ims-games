@@ -29,13 +29,10 @@ export default function GameDetailClient({ gameId }: Props) {
 
   const [customConfig, setCustomConfig] = useState<CustomWeightConfig>({
     languageFilter: null,
-    excludeVideoCreators: false,
-    traditionalMediaOnly: false,
     platformFilter: null,
     excludeOutliers: false,
     reducedBigMedia: false,
     boostedIndieMedia: false,
-    recentOnly: false,
     disabledSources: new Set(),
   });
 
@@ -120,7 +117,7 @@ export default function GameDetailClient({ gameId }: Props) {
           onChange={setCustomConfig}
           result={customResult}
           languages={Object.keys(game.language_distribution || {})}
-          platforms={game.platforms || []}
+          platforms={[...new Set((game.reviews || []).map((r) => r.platform).filter(Boolean) as string[])]}
           sources={[...new Set((game.reviews || []).map((r) => r.source_name || "").filter(Boolean))]}
         />
       </div>

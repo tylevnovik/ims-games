@@ -26,6 +26,7 @@ export interface Review {
   url: string | null;
   date: string | null;
   language: string | null;
+  platform: string | null;
   summary: string | null;
   positive_points: string | null;
   negative_points: string | null;
@@ -97,12 +98,9 @@ export interface SiteMeta {
 
 export interface CustomWeightConfig {
   languageFilter: string | null;
-  excludeVideoCreators: boolean;
-  traditionalMediaOnly: boolean;
   platformFilter: string | null;
   excludeOutliers: boolean;
   reducedBigMedia: boolean;
   boostedIndieMedia: boolean;
-  recentOnly: boolean;
   disabledSources: Set<string>;
 }
