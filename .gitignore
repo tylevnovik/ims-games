@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+
+# Database (binary)
+data/db/*.sqlite
+
+# Large data files
+data/**/*.csv
+data/**/*.parquet
+data/**/*.jsonl
+data/**/*.xlsx
+
+# Keep mock/sample data
+!data/raw/**/*.csv
+!data/raw/**/*.json
+
+# Logs
+data/logs/
+
+# Node
+node_modules/
+site/dist/
+site/.astro/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Outputs
+site/public/data/
