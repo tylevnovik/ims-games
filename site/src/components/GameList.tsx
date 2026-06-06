@@ -44,6 +44,8 @@ export default function GameList({ games }: Props) {
     return <span className="text-ims-500 ml-1">{sortDir === "desc" ? "▼" : "▲"}</span>;
   };
 
+  const stringFields = new Set(["title"]);
+
   const filtered = useMemo(() => {
     let result = games;
     if (search) {
@@ -57,11 +59,13 @@ export default function GameList({ games }: Props) {
       result = result.filter((g) => (g.genres || []).includes(genreFilter));
     }
     result = [...result].sort((a: any, b: any) => {
-      const va = a[sortBy] ?? "";
-      const vb = b[sortBy] ?? "";
-      if (typeof va === "string") {
+      if (stringFields.has(sortBy)) {
+        const va = (a[sortBy] ?? "") as string;
+        const vb = (b[sortBy] ?? "") as string;
         return sortDir === "desc" ? vb.localeCompare(va) : va.localeCompare(vb);
       }
+      const va = a[sortBy] ?? -1;
+      const vb = b[sortBy] ?? -1;
       return sortDir === "desc" ? (vb as number) - (va as number) : (va as number) - (vb as number);
     });
     return result;
