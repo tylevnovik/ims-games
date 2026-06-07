@@ -12,6 +12,7 @@ PIPELINE_STEPS = [
     "import_metacritic_kaggle",
     "import_opencritic",
     "match_games",
+    "canonicalize_entities",
     "normalize_scores",
     "compute_source_metrics",
     "compute_weights",
@@ -57,9 +58,9 @@ def run_step(name: str, extra_args: list[str] | None = None) -> float:
     script = SCRIPT_DIR / f"{name}.py"
 
     if _PYTHON == "uv":
-        cmd = ["uv", "run", "python", str(script)]
+        cmd = ["uv", "run", "python", "-u", str(script)]
     else:
-        cmd = [_PYTHON, str(script)]
+        cmd = [_PYTHON, "-u", str(script)]
     if extra_args:
         cmd.extend(extra_args)
 
@@ -88,9 +89,75 @@ def main():
         action="store_true",
         help="Skip the final export_static_json step (data pipeline only).",
     )
+    parser.add_argument(
+        "--include-opencritic-web",
+        action="store_true",
+        help="Backfill OpenCritic public web snapshot data before recomputing scores.",
+    )
+    parser.add_argument(
+        "--include-opencritic-legacy",
+        action="store_true",
+        help=(
+            "Backfill older existing games whose non-OpenCritic review counts look capped "
+            "or incomplete."
+        ),
+    )
+    parser.add_argument(
+        "--opencritic-years",
+        nargs="+",
+        default=["2024", "2025", "2026"],
+        help="Years to fetch when --include-opencritic-web is set.",
+    )
+    parser.add_argument(
+        "--opencritic-max-games",
+        default=None,
+        help="Limit games per year for OpenCritic web backfill smoke tests.",
+    )
+    parser.add_argument(
+        "--opencritic-legacy-years",
+        nargs="+",
+        default=[str(year) for year in range(2011, 2024)],
+        help="Years to scan when --include-opencritic-legacy is set.",
+    )
+    parser.add_argument(
+        "--opencritic-legacy-max-games",
+        default=None,
+        help="Limit games per year for legacy OpenCritic smoke tests.",
+    )
+    parser.add_argument(
+        "--opencritic-legacy-max-existing-reviews",
+        default="65",
+        help="Legacy mode targets existing games with at most this many non-OpenCritic reviews.",
+    )
+    parser.add_argument(
+        "--opencritic-legacy-min-reviews",
+        default="20",
+        help="Legacy mode targets only OpenCritic games with at least this many listed reviews.",
+    )
+    parser.add_argument(
+        "--opencritic-workers",
+        default="6",
+        help="Concurrent OpenCritic review-page fetch workers.",
+    )
+    parser.add_argument(
+        "--opencritic-sleep",
+        default="0.05",
+        help="Delay after each live OpenCritic fetch, in seconds.",
+    )
+    parser.add_argument(
+        "--refresh-opencritic-cache",
+        action="store_true",
+        help="Refetch OpenCritic pages instead of using the local HTML cache.",
+    )
     args = parser.parse_args()
 
     steps = list(PIPELINE_STEPS)
+    opencritic_insert_at = steps.index("import_opencritic") + 1
+    if args.include_opencritic_web:
+        steps.insert(opencritic_insert_at, "import_opencritic_web")
+        opencritic_insert_at += 1
+    if args.include_opencritic_legacy:
+        steps.insert(opencritic_insert_at, "import_opencritic_web_legacy")
     if args.skip_frontend:
         steps.remove("export_static_json")
 
@@ -101,6 +168,8 @@ def main():
     print(f"  Steps to run : {len(steps)}")
     print(f"  --rebuild    : {args.rebuild}")
     print(f"  --skip-front : {args.skip_frontend}")
+    print(f"  OC web       : {args.include_opencritic_web}")
+    print(f"  OC legacy    : {args.include_opencritic_legacy}")
     print()
 
     timings: list[tuple[str, float]] = []
@@ -112,18 +181,45 @@ def main():
         print(f"  {label}")
         print("-" * 60)
 
-        script = SCRIPT_DIR / f"{step_name}.py"
+        script_name = "import_opencritic_web" if step_name == "import_opencritic_web_legacy" else step_name
+        script = SCRIPT_DIR / f"{script_name}.py"
         if not script.exists():
-            print(f"  [SKIP] {step_name}.py not found -- script not yet implemented.")
+            print(f"  [SKIP] {script_name}.py not found -- script not yet implemented.")
             timings.append((step_name, 0.0))
             continue
 
         extra = None
         if step_name == "init_db" and args.rebuild:
             extra = ["--rebuild"]
+        elif step_name == "import_opencritic_web":
+            extra = ["--write", "--replace", "--years", *args.opencritic_years]
+            if args.opencritic_max_games:
+                extra.extend(["--max-games", args.opencritic_max_games])
+            extra.extend(["--workers", args.opencritic_workers, "--sleep", args.opencritic_sleep])
+            if args.refresh_opencritic_cache:
+                extra.append("--refresh-cache")
+        elif step_name == "import_opencritic_web_legacy":
+            extra = [
+                "--write",
+                "--years",
+                *args.opencritic_legacy_years,
+                "--only-existing-low-sample",
+                "--max-existing-reviews",
+                args.opencritic_legacy_max_existing_reviews,
+                "--min-opencritic-reviews",
+                args.opencritic_legacy_min_reviews,
+                "--workers",
+                args.opencritic_workers,
+                "--sleep",
+                args.opencritic_sleep,
+            ]
+            if args.opencritic_legacy_max_games:
+                extra.extend(["--max-games", args.opencritic_legacy_max_games])
+            if args.refresh_opencritic_cache:
+                extra.append("--refresh-cache")
 
         try:
-            elapsed = run_step(step_name, extra_args=extra)
+            elapsed = run_step(script_name, extra_args=extra)
         except RuntimeError as exc:
             print(f"\n  [FAIL] {exc}")
             print(f"\n  Pipeline stopped at step {i}/{len(steps)}: {step_name}")

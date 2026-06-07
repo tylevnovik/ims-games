@@ -266,6 +266,84 @@ export const GOTY_AWARDS: YearData[] = [
       },
     ],
   },
+  // ── 2024 ──────────────────────────────────────────────
+  {
+    year: 2024,
+    awards: [
+      {
+        show: "TGA",
+        winner: "Astro Bot",
+        nominees: [
+          "Balatro",
+          "Black Myth: Wukong",
+          "Elden Ring: Shadow of the Erdtree",
+          "Final Fantasy VII Rebirth",
+          "Metaphor: ReFantazio",
+        ],
+      },
+      {
+        show: "BAFTA",
+        winner: "Astro Bot",
+        nominees: [
+          "Balatro",
+          "Black Myth: Wukong",
+          "Helldivers 2",
+          "The Legend of Zelda: Echoes of Wisdom",
+          "Thank Goodness You're Here!",
+        ],
+      },
+      {
+        show: "GDC",
+        winner: "Balatro",
+        nominees: [
+          "Astro Bot",
+          "Black Myth: Wukong",
+          "Final Fantasy VII Rebirth",
+          "Helldivers 2",
+          "Metaphor: ReFantazio",
+        ],
+      },
+    ],
+  },
+  // ── 2025 ──────────────────────────────────────────────
+  {
+    year: 2025,
+    awards: [
+      {
+        show: "TGA",
+        winner: "Clair Obscur: Expedition 33",
+        nominees: [
+          "Death Stranding 2: On the Beach",
+          "Donkey Kong Bananza",
+          "Hades II",
+          "Hollow Knight: Silksong",
+          "Kingdom Come: Deliverance II",
+        ],
+      },
+      {
+        show: "BAFTA",
+        winner: "Clair Obscur: Expedition 33",
+        nominees: [
+          "Arc Raiders",
+          "Blue Prince",
+          "Dispatch",
+          "Ghost of Yotei",
+          "Indiana Jones and the Great Circle",
+        ],
+      },
+      {
+        show: "GDC",
+        winner: "Clair Obscur: Expedition 33",
+        nominees: [
+          "Blue Prince",
+          "Donkey Kong Bananza",
+          "Ghost of Yotei",
+          "Hollow Knight: Silksong",
+          "Split Fiction",
+        ],
+      },
+    ],
+  },
 ];
 
 /** All unique game titles mentioned across every award (for matching). */

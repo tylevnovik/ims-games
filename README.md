@@ -11,7 +11,7 @@ Transparent, explainable, and extensible game score aggregation system.
 ## 功能特性
 
 ### 游戏库（/games）
-- 12,660+ 款游戏，支持搜索、年份/类型/平台筛选、多列排序
+- 15,000+ 款游戏，支持搜索、年份/类型/平台筛选、多列排序
 - 每款游戏展示 IMS 原始分、稳健分、校准分、加权分及 Metacritic 基准分
 - 开发者、发行商、类型、平台、简介等元数据（由 RAWG 数据集补全）
 
@@ -23,20 +23,21 @@ Transparent, explainable, and extensible game score aggregation system.
 - 语言分布与平台分布可视化
 
 ### GOAT — 史上最伟大游戏（/goat）
-- 基于 IMS 加权分排名，#1 以金色奖杯卡片高亮展示
+- 基于 IMS 加权分排名，仅纳入发行年份明确且超过 50 条评论的游戏
+- #1 以金色奖杯卡片高亮展示
 - Top 2-50 候选排行表格，可跳转游戏详情
 
 ### GOTY — 年度游戏（/goty）
-- 覆盖 2014–2023 年，对比三大颁奖典礼年度游戏得主：
+- 覆盖 2014–2025 年，对比三大颁奖典礼年度游戏得主：
   - **The Game Awards (TGA)**：含提名列表
-  - **BAFTA Games Awards**
-  - **GDC Game Developers Choice Awards**
+  - **BAFTA Games Awards**：含 Best Game 提名列表
+  - **GDC Game Developers Choice Awards**：含 Game of the Year 提名列表
 - 自动检测同年多奖"共识"游戏
 - IMS 年度 Top 10 排名，获奖游戏行高亮标注
-- 颁奖数据经 Wikipedia 核实
+- 颁奖数据按官方归档页人工整理
 
 ### 其他页面
-- **媒体源**（/sources）：500+ 家评论媒体及其历史表现指标
+- **媒体源**（/sources）：800+ 家评论媒体及其历史表现指标
 - **算法说明**（/methodology）：四种 IMS 分数类型的计算公式
 - **数据来源**（/data-sources）：数据源、采集方式与版权说明
 
@@ -55,9 +56,10 @@ Transparent, explainable, and extensible game score aggregation system.
 
 | 来源 | 内容 | 规模 |
 |------|------|------|
-| Metacritic Kaggle 数据集 | 评论分数、游戏标题 | 12,660 游戏 / 321,000 评论 |
+| Metacritic Kaggle 数据集 | 评论分数、游戏标题 | 12,660 游戏 / 321,000 评论（当前本地快照 2024+ 覆盖很少） |
+| OpenCritic 公开网页快照 | 游戏、媒体评分、评论链接 | 2024–2026 全量回填；2011–2023 可定向修复低样本游戏 |
 | RAWG 数据集 | 开发者、发行商、类型、平台、简介、发行日期 | 889,000 游戏（匹配 11,997 款） |
-| GOTY 颁奖数据 | TGA / BAFTA / GDC 年度最佳 | 2014–2023（人工整理） |
+| GOTY 颁奖数据 | TGA / BAFTA / GDC 年度最佳 | 2014–2025（官方归档人工整理） |
 
 ## 数据管线
 
@@ -68,30 +70,54 @@ uv run python scripts/init_db.py
 # 2. 导入 Metacritic Kaggle 数据
 uv run python scripts/import_metacritic_kaggle.py
 
-# 3. 归一化分数
+# 3. 可选：导入 OpenCritic 官方 API / 清理旧 mock 数据
+uv run python scripts/import_opencritic.py
+
+# 4. 可选：回填 OpenCritic 公开网页快照（适合补 2024–2026）
+uv run python scripts/import_opencritic_web.py --years 2024 2025 2026 --write --replace --workers 6 --sleep 0.05
+
+# 5. 可选：用 OpenCritic 定向修复旧年份低样本/疑似截断游戏
+uv run python scripts/import_opencritic_web.py --years 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 --write --only-existing-low-sample --max-existing-reviews 65 --min-opencritic-reviews 20 --workers 6 --sleep 0.05
+
+# 6. 跨来源游戏匹配
+uv run python scripts/match_games.py
+
+# 7. 多源实体规范化：同一游戏/同一媒体多化一
+uv run python scripts/canonicalize_entities.py
+
+# 8. 归一化分数
 uv run python scripts/normalize_scores.py
 
-# 4. 计算游戏分数（IMS raw / robust / calibrated / weighted）
-uv run python scripts/compute_game_scores.py
-
-# 5. 计算媒体指标
-uv run python scripts/compute_source_metrics.py
-
-# 6. 计算媒体权重
-uv run python scripts/compute_weights.py
-
-# 7. RAWG 数据补全（两轮匹配）
+# 9. RAWG 数据补全（两轮匹配）
 uv run python scripts/enrich_from_rawg.py
 uv run python scripts/enrich_from_rawg_v2.py
 
-# 8. 回填评论平台数据
+# 10. 回填评论平台数据
 uv run python scripts/backfill_review_platforms.py
 
-# 9. 导出静态 JSON
+# 11. 计算媒体指标
+uv run python scripts/compute_source_metrics.py
+
+# 12. 计算媒体权重
+uv run python scripts/compute_weights.py
+
+# 13. 计算游戏分数（IMS raw / robust / calibrated / weighted）
+uv run python scripts/compute_game_scores.py
+
+# 14. 导出静态 JSON
 uv run python scripts/export_static_json.py
 
 # 一键执行完整管线
 uv run python scripts/build_all.py
+
+# 一键执行，并补 OpenCritic 2024–2026 网页快照
+uv run python scripts/build_all.py --include-opencritic-web
+
+# 一键执行，并同时修复旧年份低样本/疑似截断游戏
+uv run python scripts/build_all.py --include-opencritic-web --include-opencritic-legacy
+
+# 慢速/抽样调试：限制每年游戏数或调低并发
+uv run python scripts/build_all.py --include-opencritic-web --opencritic-max-games 50 --opencritic-workers 2
 ```
 
 ## 本地开发
@@ -120,6 +146,8 @@ npm run build
 │   ├── config.py               # 配置（DB 路径、算法版本）
 │   ├── init_db.py              # 初始化 SQLite 数据库
 │   ├── import_metacritic_kaggle.py  # 导入 Kaggle 数据
+│   ├── import_opencritic_web.py # OpenCritic 公开网页快照回填
+│   ├── canonicalize_entities.py # 多源游戏/媒体实体规范化
 │   ├── normalize_scores.py     # 分数归一化
 │   ├── compute_game_scores.py  # IMS 分数计算
 │   ├── compute_source_metrics.py    # 媒体指标

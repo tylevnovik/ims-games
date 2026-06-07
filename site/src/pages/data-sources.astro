@@ -31,12 +31,12 @@ if (fs.existsSync(metaPath)) {
     <section class="bg-white rounded-xl border border-gray-200 p-6">
       <h2 class="text-xl font-bold mb-3" data-i18n="data_sources.opencritic">OpenCritic 数据</h2>
       <p class="text-gray-600 mb-2" data-i18n="data_sources.opencritic_desc">
-        用于增强评论级别数据，包含独立评论、媒体信息、
-        评论者姓名和评论链接。目前使用模拟数据进行演示。
+        用于增强评论级别数据，包含独立评论、媒体信息、评论日期和评论链接；
+        当前用于补齐 2024–2026 以及旧年份低样本游戏。默认不使用模拟数据。
       </p>
       <ul class="list-disc pl-6 text-gray-600 text-sm space-y-1">
-        <li data-i18n="data_sources.opencritic.api">API 集成计划在 API 密钥可用后实施</li>
-        <li data-i18n="data_sources.opencritic.mock">25 款热门游戏的模拟数据作为概念验证</li>
+        <li data-i18n="data_sources.opencritic.api">优先使用官方 API；没有 API 导出时，可用公开网页快照做静态回填</li>
+        <li data-i18n="data_sources.opencritic.mock">模拟数据仅用于本地概念验证，不参与默认构建</li>
         <li data-i18n="data_sources.opencritic.provenance">每条评论保留来源链接用于署名</li>
       </ul>
     </section>

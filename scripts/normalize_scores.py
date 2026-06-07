@@ -11,6 +11,11 @@ from sqlalchemy import create_engine, text
 
 from config import DB_URL, LETTER_GRADE_MAP, ensure_dirs
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 # ---------------------------------------------------------------------------
 # Patterns
 # ---------------------------------------------------------------------------

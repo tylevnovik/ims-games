@@ -5,6 +5,7 @@ by source + genre + platform with human-readable English explanations.
 """
 
 import json
+import math
 import sys
 from datetime import datetime, timezone
 
@@ -12,13 +13,19 @@ from sqlalchemy import create_engine, text
 
 from config import ALGORITHM_VERSION, DB_URL, ensure_dirs
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 def _clip(value, lo, hi):
     return max(lo, min(hi, value))
 
 
 def _sample_confidence(sample_count):
-    raw = 0.6 + 0.4 * min(1.0, sample_count / 50.0)
+    # Log scale keeps mature outlets distinct without letting giant archives dominate.
+    raw = 0.6 + 0.5 * min(1.0, math.log1p(max(0, sample_count)) / math.log1p(5000))
     return _clip(raw, 0.6, 1.1)
 
 
@@ -55,9 +62,11 @@ def _build_explanation(source_name, genre, platform, sample_count, disc_factor, 
         parts.append("moderate score discrimination")
     else:
         parts.append("low score discrimination")
-    if sample_count >= 30:
+    if sample_count >= 500:
+        parts.append(", large historical sample")
+    elif sample_count >= 100:
         parts.append(", sufficient sample size")
-    elif sample_count >= 10:
+    elif sample_count >= 30:
         parts.append(", moderate sample size")
     else:
         parts.append(", limited sample size")

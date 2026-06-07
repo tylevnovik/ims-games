@@ -7,13 +7,20 @@ interface Props {
   games: GameSummary[];
 }
 
+const MIN_GOAT_REVIEWS = 51;
+
 export default function GoatList({ games }: Props) {
   const [, , t] = useLang();
 
   const ranked = useMemo(
     () =>
       games
-        .filter((g) => g.ims_weighted != null)
+        .filter(
+          (g) =>
+            g.ims_weighted != null &&
+            g.release_year != null &&
+            (g.review_count ?? 0) >= MIN_GOAT_REVIEWS,
+        )
         .sort((a, b) => (b.ims_weighted ?? 0) - (a.ims_weighted ?? 0)),
     [games],
   );

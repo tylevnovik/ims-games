@@ -4,13 +4,19 @@ import GoatList from "../components/GoatList";
 import fs from "node:fs";
 import path from "node:path";
 
+const MIN_GOAT_REVIEWS = 51;
 let games: any[] = [];
 const gamesPath = path.join(process.cwd(), "public", "data", "games.json");
 if (fs.existsSync(gamesPath)) {
   const all = JSON.parse(fs.readFileSync(gamesPath, "utf-8"));
-  // Only pass top 50 by IMS weighted, strip heavy fields
+  // Only pass eligible top 50 by IMS weighted, strip heavy fields
   games = all
-    .filter((g: any) => g.ims_weighted != null)
+    .filter(
+      (g: any) =>
+        g.ims_weighted != null &&
+        g.release_year != null &&
+        (g.review_count ?? 0) >= MIN_GOAT_REVIEWS,
+    )
     .sort((a: any, b: any) => b.ims_weighted - a.ims_weighted)
     .slice(0, 50)
     .map((g: any) => ({

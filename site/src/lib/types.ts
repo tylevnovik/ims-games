@@ -35,7 +35,7 @@ export interface Review {
 
 export interface GameDetail extends GameSummary {
   reviews: Review[];
-  source_metrics: Record<string, SourceMetric>;
+  source_metrics?: Record<string, SourceMetric>;
   external_baselines: ExternalBaseline[];
   language_distribution: Record<string, number>;
   platform_distribution: Record<string, number>;

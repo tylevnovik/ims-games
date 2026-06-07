@@ -23,6 +23,7 @@ from config import (
     METACRITIC_PARQUET,
     ensure_dirs,
 )
+from source_identity import canonical_source_name, source_id_for_name
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +41,7 @@ def game_id_for(title: str) -> str:
 
 
 def source_id_for(website: str) -> str:
-    return f"mc-src-{_md5(website)[:12]}"
+    return source_id_for_name(website)
 
 
 def review_id_for(row_id: int) -> str:
@@ -178,9 +179,10 @@ def run_import() -> None:
 
         source_rows = []
         for website in unique_websites:
+            canonical_name = canonical_source_name(website)
             source_rows.append({
-                "source_id": source_id_for(website),
-                "name": website,
+                "source_id": source_id_for(canonical_name),
+                "name": canonical_name,
                 "source_type": "media",
                 "country_region": None,
                 "language": "en",

@@ -15,6 +15,11 @@ from config import ALGORITHM_VERSION, DB_URL, ensure_dirs
 
 MIN_REVIEWS = 3
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 def run() -> None:
     ensure_dirs()

@@ -11,6 +11,8 @@ interface Props {
 /* ── Fuzzy title matching ── */
 function normalise(s: string): string {
   return s
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[™®©]/g, "")
     .replace(/:\s*/g, " ")
@@ -171,7 +173,7 @@ export default function GotyList({ games }: Props) {
                 </span>
               )}
 
-              {/* Nominees (TGA only has detailed nominees) */}
+              {/* Nominees */}
               {award.nominees.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-200/60">
                   <p className="text-xs text-gray-400 mb-1">

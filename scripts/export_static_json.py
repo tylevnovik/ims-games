@@ -1,6 +1,9 @@
-"""Export all IMS Games data from SQLite to static JSON files for the frontend.
+"""Export IMS Games data from SQLite to static JSON files for the frontend.
 
 OPTIMIZED: uses bulk queries + in-memory grouping instead of per-game queries.
+
+The SQLite database remains the full internal source of truth. This exporter
+emits a compact publication view containing only fields used by static pages.
 """
 
 import json
@@ -11,6 +14,11 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 from config import ALGORITHM_VERSION, DB_PATH, SITE_DATA_DIR, ensure_dirs
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 
 def connect_db():
@@ -26,7 +34,27 @@ def write_json(path, data):
     from pathlib import Path as P
     p = P(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    p.write_text(
+        json.dumps(data, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+
+
+def remove_stale_detail_files(directory, expected_ids):
+    """Remove detail JSON files whose IDs are no longer present in list data."""
+    expected = {str(item_id) for item_id in expected_ids}
+    removed = 0
+    directory = directory.resolve()
+    for path in directory.glob("*.json"):
+        if path.stem in expected:
+            continue
+        resolved = path.resolve()
+        if directory not in resolved.parents:
+            raise RuntimeError(f"Refusing to remove outside detail directory: {resolved}")
+        resolved.unlink()
+        removed += 1
+    if removed:
+        print(f"  [OK] Removed {removed} stale detail files from {directory.name}/")
 
 
 def _parse_json_text(raw):
@@ -114,24 +142,6 @@ def export_game_details(conn, games):
     for r in all_reviews:
         reviews_by_game[r["game_id"]].append(r)
 
-    # Bulk load ALL source metrics
-    sm_rows = conn.execute("""
-        SELECT source_id, sample_count, mean_score, score_std,
-               score_bias, discrimination_power, genre_coverage, platform_coverage
-        FROM source_metrics WHERE algorithm_version = ?
-    """, (ALGORITHM_VERSION,)).fetchall()
-    sm_lookup = {}
-    for r in sm_rows:
-        sm_lookup[r["source_id"]] = {
-            "sample_count": r["sample_count"],
-            "mean_score": r["mean_score"],
-            "score_std": r["score_std"],
-            "score_bias": r["score_bias"],
-            "discrimination_power": r["discrimination_power"],
-            "genre_coverage": _parse_json_text(r["genre_coverage"]),
-            "platform_coverage": _parse_json_text(r["platform_coverage"]),
-        }
-
     # Bulk load ALL external baselines
     bl_rows = conn.execute("""
         SELECT game_id, source_platform, external_score, external_user_score,
@@ -169,13 +179,11 @@ def export_game_details(conn, games):
         # Reviews
         game_reviews = reviews_by_game.get(gid, [])
         reviews_out = []
-        source_ids_in_game = set()
         lang_dist = defaultdict(int)
         plat_dist = defaultdict(int)
 
         for rv in game_reviews:
             sid = rv["source_id"]
-            source_ids_in_game.add(sid)
 
             # Find weight for this source + game genre/platform
             w_info = w_lookup.get((sid, None, None), {})
@@ -203,16 +211,9 @@ def export_game_details(conn, games):
             if rv["platform"]:
                 plat_dist[rv["platform"]] += 1
 
-        # Source metrics
-        source_metrics = {}
-        for sid in source_ids_in_game:
-            if sid in sm_lookup:
-                source_metrics[sid] = sm_lookup[sid]
-
         detail = {
             **game,
             "reviews": reviews_out,
-            "source_metrics": source_metrics,
             "external_baselines": bl_by_game.get(gid, []),
             "language_distribution": dict(lang_dist),
             "platform_distribution": dict(plat_dist),
@@ -333,6 +334,7 @@ def export_source_details(conn, sources):
             SELECT genre, platform, base_weight, context_weight,
                    confidence, explanation
             FROM weights WHERE source_id = ? AND algorithm_version = ?
+            LIMIT 10
         """, (sid, ALGORITHM_VERSION)).fetchall():
             w_list.append(dict(wr))
         weights = {"records": w_list} if w_list else {}
@@ -431,10 +433,12 @@ def main():
         games = export_games_list(conn)
         print("[2/6] Exporting game detail pages...")
         export_game_details(conn, games)
+        remove_stale_detail_files(SITE_DATA_DIR / "games", [game["game_id"] for game in games])
         print("[3/6] Exporting sources list...")
         sources = export_sources_list(conn)
         print("[4/6] Exporting source detail pages...")
         export_source_details(conn, sources)
+        remove_stale_detail_files(SITE_DATA_DIR / "sources", [source["source_id"] for source in sources])
         print("[5/6] Exporting latest scores...")
         export_latest_scores(conn)
         print("[6/6] Exporting meta...")

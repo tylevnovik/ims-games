@@ -1,14 +1,16 @@
-"""Import OpenCritic review data (or generate mock data) into the IMS Games database.
+"""Import OpenCritic review data (or optionally generate mock data).
 
 Modes:
     - API mode:  if OPENCRITIC_API_KEY env var is set, fetch from API (placeholder)
-    - Mock mode: generate realistic mock review data for ~25 popular games already
-                  present in the database (from a prior Metacritic import)
+    - Mock mode: only when --mock is passed, generate demo review data for a
+                  small set of popular games already present in the database
 
 Usage:
     python import_opencritic.py
+    python import_opencritic.py --mock
 """
 
+import argparse
 import hashlib
 import os
 import random
@@ -25,6 +27,7 @@ from config import (
     OPENCRITIC_DIR,
     ensure_dirs,
 )
+from source_identity import canonical_source_name, source_id_for_name
 
 
 # ---------------------------------------------------------------------------
@@ -41,7 +44,7 @@ def game_id_for(title: str) -> str:
 
 
 def oc_source_id_for(name: str) -> str:
-    return f"oc-src-{_md5(name)[:12]}"
+    return source_id_for_name(name)
 
 
 def oc_review_id_for(game_title: str, source_name: str) -> str:
@@ -341,12 +344,36 @@ def _insert_dicts(session, table_name: str, rows: list[dict]) -> None:
     session.commit()
 
 
+def _insert_or_ignore_dicts(session, table_name: str, rows: list[dict]) -> None:
+    """INSERT OR IGNORE for lookup rows that should not overwrite canonical data."""
+    if not rows:
+        return
+    columns = list(rows[0].keys())
+    cols_sql = ", ".join(columns)
+    placeholders = ", ".join(f":{c}" for c in columns)
+    sql = f"INSERT OR IGNORE INTO {table_name} ({cols_sql}) VALUES ({placeholders})"
+    session.execute(text(sql), rows)
+    session.commit()
+
+
+def _purge_mock_data(session) -> None:
+    """Remove old OpenCritic mock rows so production builds stay honest."""
+    session.execute(text("DELETE FROM reviews WHERE data_source = 'opencritic_mock'"))
+    session.execute(text("DELETE FROM game_identity WHERE source_name = 'opencritic_mock'"))
+    session.execute(text("""
+        DELETE FROM sources
+        WHERE notes = 'OpenCritic mock source'
+          AND source_id NOT IN (SELECT DISTINCT source_id FROM reviews)
+    """))
+    session.commit()
+
+
 # ---------------------------------------------------------------------------
 # Main import flow
 # ---------------------------------------------------------------------------
 
 
-def run_import() -> None:
+def run_import(allow_mock: bool = False) -> None:
     ensure_dirs()
     now = _now()
 
@@ -363,11 +390,17 @@ def run_import() -> None:
             print("[opencritic] OPENCRITIC_API_KEY found. Attempting API mode...")
             api_data = fetch_from_api()
             if not api_data:
-                print("[opencritic] API returned no data. Falling back to mock mode.")
+                print("[opencritic] API returned no data.")
                 use_api = False
         else:
             print("[opencritic] WARNING: No OPENCRITIC_API_KEY env var set.")
-            print("[opencritic] Using MOCK data mode for demonstration.")
+            print("[opencritic] API import skipped.")
+
+        if not use_api and not allow_mock:
+            print("[opencritic] Mock mode is disabled by default. Use --mock for demo data.")
+            print("[opencritic] Purging any previous OpenCritic mock rows...")
+            _purge_mock_data(session)
+            return
 
         # ------------------------------------------------------------------
         # Mock mode
@@ -389,9 +422,10 @@ def run_import() -> None:
             print(f"[opencritic] Inserting {len(data['sources'])} mock sources...")
             source_rows = []
             for src in data["sources"]:
+                canonical_name = canonical_source_name(src["name"])
                 source_rows.append({
-                    "source_id": oc_source_id_for(src["name"]),
-                    "name": src["name"],
+                    "source_id": oc_source_id_for(canonical_name),
+                    "name": canonical_name,
                     "source_type": "media",
                     "country_region": src["region"],
                     "language": src["language"],
@@ -403,7 +437,7 @@ def run_import() -> None:
                     "created_at": now,
                     "updated_at": now,
                 })
-            _upsert_dicts(session, "sources", source_rows)
+            _insert_or_ignore_dicts(session, "sources", source_rows)
             print(f"[opencritic]   Inserted {len(source_rows)} sources.")
 
             # -- Reviews --
@@ -493,8 +527,16 @@ def run_import() -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Import OpenCritic data.")
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="Generate small demo data. Disabled by default to avoid polluting metrics.",
+    )
+    args = parser.parse_args()
+
     try:
-        run_import()
+        run_import(allow_mock=args.mock)
     except Exception as exc:
         print(f"[opencritic] ERROR: {exc}", file=sys.stderr)
         import traceback

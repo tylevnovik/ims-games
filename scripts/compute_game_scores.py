@@ -17,6 +17,11 @@ from config import (
     MIN_SAMPLE_FOR_TRIMMING, ensure_dirs,
 )
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 def _clamp(value, lo=0.0, hi=100.0):
     return max(lo, min(hi, value))
