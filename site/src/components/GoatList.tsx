@@ -17,7 +17,7 @@ export default function GoatList({ games }: Props) {
         .filter(
           (g) =>
             isRankingEligible(g) &&
-            g.release_year != null &&
+            g.release_year != null,
         )
         .sort((a, b) => (b.ims_weighted ?? 0) - (a.ims_weighted ?? 0)),
     [games],
