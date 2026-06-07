@@ -14,7 +14,7 @@ if (fs.existsSync(gamesPath)) {
     .filter(
       (g: any) =>
         isRankingEligible(g) &&
-        g.release_year != null &&
+        g.release_year != null,
     )
     .sort((a: any, b: any) => b.ims_weighted - a.ims_weighted)
     .slice(0, 50)
