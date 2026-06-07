@@ -79,6 +79,9 @@ uv run python scripts/import_opencritic_web.py --years 2024 2025 2026 --write --
 # 5. 可选：用 OpenCritic 定向修复旧年份低样本/疑似截断游戏
 uv run python scripts/import_opencritic_web.py --years 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 --write --only-existing-low-sample --max-existing-reviews 50 --min-opencritic-reviews 1 --workers 8 --sleep 0.02
 
+# 5b. 可选：修复当前快照中精确 50/100 条评论的疑似截断样本
+uv run python scripts/import_opencritic_web.py --years 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 --write --only-existing-low-sample --target-snapshot-sample-counts 50 100 --min-opencritic-reviews 1 --workers 8 --sleep 0.02
+
 # 6. 跨来源游戏匹配
 uv run python scripts/match_games.py
 

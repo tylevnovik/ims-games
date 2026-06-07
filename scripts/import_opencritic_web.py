@@ -31,11 +31,32 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from config import DB_PATH, OPENCRITIC_DIR, ensure_dirs
+from config import ALGORITHM_VERSION, DB_PATH, OPENCRITIC_DIR, ensure_dirs
 from source_identity import canonical_source_name, source_id_for_name
 
 BASE_URL = "https://opencritic.com"
 DEFAULT_USER_AGENT = "Mozilla/5.0 (compatible; IMS-Games-Backfill/0.1)"
+ROMAN_NUMERAL_TOKENS = {
+    "i": "1",
+    "ii": "2",
+    "iii": "3",
+    "iv": "4",
+    "v": "5",
+    "vi": "6",
+    "vii": "7",
+    "viii": "8",
+    "ix": "9",
+    "x": "10",
+    "xi": "11",
+    "xii": "12",
+    "xiii": "13",
+    "xiv": "14",
+    "xv": "15",
+    "xvi": "16",
+}
+COMBINED_GAME_TITLE_ALIASES = {
+    "pokemon scarlet and violet": ("pokemon scarlet", "pokemon violet"),
+}
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -68,7 +89,7 @@ def game_id_for(title: str) -> str:
 def review_id_for(review: dict, game_id: str) -> str:
     raw_id = review.get("_id")
     if raw_id:
-        return f"oc-rev-{raw_id}"
+        return f"oc-rev-{game_id}-{raw_id}"
     outlet = (review.get("Outlet") or {}).get("name") or ""
     url = review.get("externalUrl") or ""
     date = review.get("publishedDate") or ""
@@ -102,7 +123,8 @@ def _json_list(items: list[str]) -> str | None:
 
 def _normalize_game_title(title: str) -> str:
     text = str(title or "")
-    text = re.sub(r"\s*\(((?:19|20)\d{2})\)\s*$", "", text)
+    text = re.sub(r"\s*\([^)]+\)\s*$", "", text)
+    text = text.replace("&", " and ")
     ascii_title = (
         unicodedata.normalize("NFKD", text)
         .encode("ascii", "ignore")
@@ -110,7 +132,9 @@ def _normalize_game_title(title: str) -> str:
     )
     lowered = ascii_title.lower()
     alnum = re.sub(r"[^a-z0-9\s]", " ", lowered)
-    return re.sub(r"\s+", " ", alnum).strip()
+    normalized = re.sub(r"\s+", " ", alnum).strip()
+    tokens = [ROMAN_NUMERAL_TOKENS.get(token, token) for token in normalized.split()]
+    return " ".join(tokens)
 
 
 def _game_slug(game: dict) -> str:
@@ -376,25 +400,77 @@ def load_non_opencritic_review_counts(conn: sqlite3.Connection) -> dict[str, int
     return {row["game_id"]: int(row["c"] or 0) for row in rows}
 
 
-def resolve_game_id(title: str, release_year: int | None, lookup: dict) -> str:
-    norm = _normalize_game_title(title)
+def load_snapshot_target_counts(
+    conn: sqlite3.Connection,
+    target_sample_counts: set[int],
+) -> dict[str, dict[str, int]]:
+    if not target_sample_counts:
+        return {}
+    placeholders = ",".join("?" for _ in target_sample_counts)
+    rows = conn.execute(
+        f"""
+        SELECT ss.game_id,
+               ss.sample_count,
+               SUM(CASE WHEN r.data_source = 'opencritic_web' THEN 1 ELSE 0 END) AS opencritic_count,
+               SUM(CASE WHEN r.data_source <> 'opencritic_web' THEN 1 ELSE 0 END) AS non_opencritic_count
+        FROM score_snapshots ss
+        JOIN reviews r ON r.game_id = ss.game_id
+        WHERE ss.algorithm_version = ?
+          AND ss.sample_count IN ({placeholders})
+          AND r.normalized_score IS NOT NULL
+        GROUP BY ss.game_id, ss.sample_count
+        """,
+        (ALGORITHM_VERSION, *tuple(sorted(target_sample_counts))),
+    ).fetchall()
+    return {
+        row["game_id"]: {
+            "sample_count": int(row["sample_count"] or 0),
+            "opencritic_count": int(row["opencritic_count"] or 0),
+            "non_opencritic_count": int(row["non_opencritic_count"] or 0),
+        }
+        for row in rows
+    }
+
+
+def _lookup_game_ids(norm: str, release_year: int | None, lookup: dict) -> list[str]:
+    ids: list[str] = []
     if release_year is not None:
         existing = lookup["by_title_year"].get((norm, release_year))
         if existing:
-            return existing
+            ids.append(existing)
     title_matches = lookup["by_title"].get(norm, [])
-    if len(set(title_matches)) == 1:
-        return title_matches[0]
+    if len(set(title_matches)) == 1 and title_matches[0] not in ids:
+        ids.append(title_matches[0])
+    return ids
+
+
+def resolve_game_ids(title: str, release_year: int | None, lookup: dict) -> list[str]:
+    norm = _normalize_game_title(title)
+    if not norm:
+        return []
+    ids = _lookup_game_ids(norm, release_year, lookup)
+    if ids:
+        return ids
+    for alias_norm in COMBINED_GAME_TITLE_ALIASES.get(norm, ()):
+        for game_id in _lookup_game_ids(alias_norm, release_year, lookup):
+            if game_id not in ids:
+                ids.append(game_id)
+    return ids
+
+
+def resolve_game_id(title: str, release_year: int | None, lookup: dict) -> str:
+    ids = resolve_game_ids(title, release_year, lookup)
+    if len(ids) == 1:
+        return ids[0]
     return game_id_for(title)
 
 
-def resolved_existing_game_id(game: dict, fallback_year: int, lookup: dict, existing_counts: dict[str, int]) -> str | None:
+def resolved_existing_game_ids(game: dict, fallback_year: int, lookup: dict, existing_counts: dict[str, int]) -> list[str]:
     title = str(game.get("name") or "").strip()
     if not title:
-        return None
+        return []
     release_year = _year_from_date(game.get("firstReleaseDate")) or fallback_year
-    game_id = resolve_game_id(title, release_year, lookup)
-    return game_id if game_id in existing_counts else None
+    return [game_id for game_id in resolve_game_ids(title, release_year, lookup) if game_id in existing_counts]
 
 
 def filter_existing_low_sample_games(
@@ -404,35 +480,69 @@ def filter_existing_low_sample_games(
     existing_counts: dict[str, int],
     max_existing_reviews: int,
     min_opencritic_reviews: int,
+    target_snapshot_counts: dict[str, dict[str, int]] | None = None,
 ) -> list[dict]:
     selected: list[dict] = []
     skipped_unmatched = 0
     skipped_enough_existing = 0
     skipped_low_opencritic = 0
+    skipped_not_target_sample = 0
+    skipped_already_has_opencritic = 0
 
     for game in games:
-        game_id = resolved_existing_game_id(game, year, lookup, existing_counts)
-        if game_id is None:
+        game_ids = resolved_existing_game_ids(game, year, lookup, existing_counts)
+        if not game_ids:
             skipped_unmatched += 1
             continue
 
-        current_reviews = existing_counts.get(game_id, 0)
         oc_reviews = int(game.get("numReviews") or 0)
-        if current_reviews > max_existing_reviews:
-            skipped_enough_existing += 1
-            continue
-        if oc_reviews < min_opencritic_reviews or oc_reviews <= current_reviews:
-            skipped_low_opencritic += 1
-            continue
+        for game_id in game_ids:
+            target_info = target_snapshot_counts.get(game_id) if target_snapshot_counts else None
+            if target_snapshot_counts is not None:
+                if target_info is None:
+                    skipped_not_target_sample += 1
+                    continue
+                if int(target_info.get("opencritic_count") or 0) > 0:
+                    skipped_already_has_opencritic += 1
+                    continue
+                if oc_reviews < min_opencritic_reviews:
+                    skipped_low_opencritic += 1
+                    continue
 
-        game["_resolved_existing_game_id"] = game_id
-        game["_existing_review_count"] = current_reviews
-        selected.append(game)
+                target_game = dict(game)
+                target_game["_resolved_existing_game_id"] = game_id
+                target_game["_existing_review_count"] = int(target_info.get("non_opencritic_count") or 0)
+                target_game["_target_snapshot_sample_count"] = int(target_info.get("sample_count") or 0)
+                if len(game_ids) > 1:
+                    target_game["_identity_suffix"] = game_id
+                selected.append(target_game)
+                continue
+
+            current_reviews = existing_counts.get(game_id, 0)
+            if current_reviews > max_existing_reviews:
+                skipped_enough_existing += 1
+                continue
+            if oc_reviews < min_opencritic_reviews or oc_reviews <= current_reviews:
+                skipped_low_opencritic += 1
+                continue
+
+            target_game = dict(game)
+            target_game["_resolved_existing_game_id"] = game_id
+            target_game["_existing_review_count"] = current_reviews
+            if len(game_ids) > 1:
+                target_game["_identity_suffix"] = game_id
+            selected.append(target_game)
 
     print(
         "[opencritic_web] Targeted filter: "
         f"selected={len(selected)}, unmatched={skipped_unmatched}, "
         f"existing_above_cap={skipped_enough_existing}, low_oc_gain={skipped_low_opencritic}"
+        + (
+            f", not_target_sample={skipped_not_target_sample}, "
+            f"already_has_oc={skipped_already_has_opencritic}"
+            if target_snapshot_counts is not None
+            else ""
+        )
     )
     return selected
 
@@ -461,7 +571,7 @@ def upsert_game(
 
     release_date = detail.get("firstReleaseDate") or game.get("firstReleaseDate")
     release_year = _year_from_date(release_date)
-    game_id = resolve_game_id(title, release_year, lookup)
+    game_id = game.get("_resolved_existing_game_id") or resolve_game_id(title, release_year, lookup)
     platforms = _json_list(_platform_names(detail.get("Platforms") or game.get("Platforms")))
     genres = _json_list(_genre_names(detail or game))
     description = _truncate(detail.get("description") or (detail.get("reviewSummary") or {}).get("summary"))
@@ -506,6 +616,11 @@ def upsert_identity_and_baseline(
     oc_id = game["id"]
     title = detail.get("name") or game.get("name")
     source_url = _absolute_url(detail.get("url") or game.get("url") or f"/game/{oc_id}/{_game_slug(game)}")
+    identity_id = identity_id_for(oc_id)
+    baseline_id = baseline_id_for(oc_id)
+    if game.get("_identity_suffix"):
+        identity_id = f"{identity_id}-{game['_identity_suffix']}"
+        baseline_id = f"{baseline_id}-{game['_identity_suffix']}"
     conn.execute(
         """
         INSERT OR REPLACE INTO game_identity
@@ -515,7 +630,7 @@ def upsert_identity_and_baseline(
         VALUES (?, ?, 'opencritic_web', ?, ?, ?, ?, 0.95, 'opencritic_title_year', 0, ?, ?)
         """,
         (
-            identity_id_for(oc_id),
+            identity_id,
             game_id,
             str(oc_id),
             _game_slug(game),
@@ -538,7 +653,7 @@ def upsert_identity_and_baseline(
                 'OpenCritic public web snapshot')
         """,
         (
-            baseline_id_for(oc_id),
+            baseline_id,
             game_id,
             float(score) if score is not None else None,
             int(review_count) if review_count is not None else None,
@@ -685,7 +800,16 @@ def run(args: argparse.Namespace) -> None:
             print("[opencritic_web] Removing previous opencritic_web rows...")
             purge_existing_opencritic_web(conn)
         game_lookup = load_existing_game_lookup(conn) if conn else {"by_title_year": {}, "by_title": {}}
+        target_sample_counts = {int(v) for v in args.target_snapshot_sample_counts}
+        target_snapshot_counts = (
+            load_snapshot_target_counts(conn, target_sample_counts)
+            if conn and target_sample_counts
+            else None
+        )
         existing_counts = load_non_opencritic_review_counts(conn) if conn and args.only_existing_low_sample else {}
+        if target_snapshot_counts:
+            for game_id in target_snapshot_counts:
+                existing_counts.setdefault(game_id, target_snapshot_counts[game_id]["non_opencritic_count"])
 
         for year in args.years:
             print(f"\n[opencritic_web] Fetching year {year}...")
@@ -699,6 +823,7 @@ def run(args: argparse.Namespace) -> None:
                     existing_counts=existing_counts,
                     max_existing_reviews=args.max_existing_reviews,
                     min_opencritic_reviews=args.min_opencritic_reviews,
+                    target_snapshot_counts=target_snapshot_counts,
                 )
                 print(f"[opencritic_web] {year}: {len(games)} targeted games after filtering")
             if args.list_only:
@@ -706,10 +831,12 @@ def run(args: argparse.Namespace) -> None:
                 for idx, game in enumerate(games[: args.list_preview], start=1):
                     title = game.get("name") or f"OpenCritic game {game.get('id')}"
                     existing = game.get("_existing_review_count")
+                    target = game.get("_target_snapshot_sample_count")
                     existing_note = f", existing={existing}" if existing is not None else ""
+                    target_note = f", target_sample={target}" if target is not None else ""
                     print(
                         f"  [{idx}/{len(games)}] {title}"
-                        f" (oc={game.get('numReviews') or 0}{existing_note})"
+                        f" (oc={game.get('numReviews') or 0}{existing_note}{target_note})"
                     )
                 if len(games) > args.list_preview:
                     print(f"  ... {len(games) - args.list_preview} more target games")
@@ -719,7 +846,12 @@ def run(args: argparse.Namespace) -> None:
                 title = game.get("name") or f"OpenCritic game {game.get('id')}"
                 existing_note = ""
                 if "_existing_review_count" in game:
-                    existing_note = f" (existing={game['_existing_review_count']}, oc={game.get('numReviews') or 0})"
+                    target = game.get("_target_snapshot_sample_count")
+                    target_note = f", target_sample={target}" if target is not None else ""
+                    existing_note = (
+                        f" (existing={game['_existing_review_count']}, "
+                        f"oc={game.get('numReviews') or 0}{target_note})"
+                    )
                 print(f"  [{idx}/{len(games)}] {title}{existing_note}")
                 totals["games_seen"] += 1
                 totals["reviews_seen"] += len(reviews)
@@ -794,6 +926,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         type=int,
         default=20,
         help="Target only OpenCritic games with at least this many listed reviews.",
+    )
+    parser.add_argument(
+        "--target-snapshot-sample-counts",
+        nargs="*",
+        type=int,
+        default=[],
+        help=(
+            "Target existing games whose current score_snapshots.sample_count is exactly one "
+            "of these values. Useful for repairing capped samples such as 50 or 100."
+        ),
     )
     parser.add_argument("--cache-dir", default=None, help="HTML cache directory.")
     parser.add_argument("--db-path", default=None, help="SQLite DB path. Defaults to data/db/ims_games.sqlite.")

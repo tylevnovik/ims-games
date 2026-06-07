@@ -135,6 +135,15 @@ def main():
         help="Legacy mode targets only OpenCritic games with at least this many listed reviews.",
     )
     parser.add_argument(
+        "--opencritic-legacy-target-sample-counts",
+        nargs="*",
+        default=["50", "100"],
+        help=(
+            "Additional legacy repair pass for games whose current score snapshot sample_count "
+            "is exactly one of these values. Pass the flag with no values to disable."
+        ),
+    )
+    parser.add_argument(
         "--opencritic-workers",
         default="6",
         help="Concurrent OpenCritic review-page fetch workers.",
@@ -158,6 +167,9 @@ def main():
         opencritic_insert_at += 1
     if args.include_opencritic_legacy:
         steps.insert(opencritic_insert_at, "import_opencritic_web_legacy")
+        opencritic_insert_at += 1
+        if args.opencritic_legacy_target_sample_counts:
+            steps.insert(opencritic_insert_at, "import_opencritic_web_legacy_capped_samples")
     if args.skip_frontend:
         steps.remove("export_static_json")
 
@@ -181,7 +193,11 @@ def main():
         print(f"  {label}")
         print("-" * 60)
 
-        script_name = "import_opencritic_web" if step_name == "import_opencritic_web_legacy" else step_name
+        script_name = (
+            "import_opencritic_web"
+            if step_name in {"import_opencritic_web_legacy", "import_opencritic_web_legacy_capped_samples"}
+            else step_name
+        )
         script = SCRIPT_DIR / f"{script_name}.py"
         if not script.exists():
             print(f"  [SKIP] {script_name}.py not found -- script not yet implemented.")
@@ -206,6 +222,25 @@ def main():
                 "--only-existing-low-sample",
                 "--max-existing-reviews",
                 args.opencritic_legacy_max_existing_reviews,
+                "--min-opencritic-reviews",
+                args.opencritic_legacy_min_reviews,
+                "--workers",
+                args.opencritic_workers,
+                "--sleep",
+                args.opencritic_sleep,
+            ]
+            if args.opencritic_legacy_max_games:
+                extra.extend(["--max-games", args.opencritic_legacy_max_games])
+            if args.refresh_opencritic_cache:
+                extra.append("--refresh-cache")
+        elif step_name == "import_opencritic_web_legacy_capped_samples":
+            extra = [
+                "--write",
+                "--years",
+                *args.opencritic_legacy_years,
+                "--only-existing-low-sample",
+                "--target-snapshot-sample-counts",
+                *args.opencritic_legacy_target_sample_counts,
                 "--min-opencritic-reviews",
                 args.opencritic_legacy_min_reviews,
                 "--workers",

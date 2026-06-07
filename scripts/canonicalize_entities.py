@@ -37,20 +37,51 @@ GAME_METADATA_FIELDS = [
     "description",
 ]
 
+ROMAN_NUMERAL_TOKENS = {
+    "i": "1",
+    "ii": "2",
+    "iii": "3",
+    "iv": "4",
+    "v": "5",
+    "vi": "6",
+    "vii": "7",
+    "viii": "8",
+    "ix": "9",
+    "x": "10",
+    "xi": "11",
+    "xii": "12",
+    "xiii": "13",
+    "xiv": "14",
+    "xv": "15",
+    "xvi": "16",
+}
+TRAILING_PLATFORM_TAG_RE = re.compile(
+    r"\s*\((?:"
+    r"ps[1-5]|playstation(?: [1-5])?|"
+    r"xbox(?: one| 360| series x/s)?|"
+    r"switch|wii u?|3ds|ds|pc|ios|android|vita|psp"
+    r")\)\s*$",
+    re.IGNORECASE,
+)
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def _normalize_title(title: str) -> str:
+    text = TRAILING_PLATFORM_TAG_RE.sub("", str(title or ""))
+    text = text.replace("&", " and ")
     ascii_title = (
-        unicodedata.normalize("NFKD", str(title or ""))
+        unicodedata.normalize("NFKD", text)
         .encode("ascii", "ignore")
         .decode("ascii")
     )
     lowered = ascii_title.lower()
     alnum = re.sub(r"[^a-z0-9\s]", " ", lowered)
-    return re.sub(r"\s+", " ", alnum).strip()
+    normalized = re.sub(r"\s+", " ", alnum).strip()
+    tokens = [ROMAN_NUMERAL_TOKENS.get(token, token) for token in normalized.split()]
+    return " ".join(tokens)
 
 
 def _url_slug_text(url: str | None) -> str:
