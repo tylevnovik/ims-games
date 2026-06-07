@@ -10,21 +10,8 @@ build/
 # Virtual environments
 .venv/
 
-# Database (binary)
-data/db/*.sqlite
-
-# Large data files
-data/**/*.csv
-data/**/*.parquet
-data/**/*.jsonl
-data/**/*.xlsx
-
-# Keep mock/sample data
-!data/raw/**/*.csv
-!data/raw/**/*.json
-
-# Logs
-data/logs/
+# Ignore all local data, databases, and logs
+data/
 
 # Node
 node_modules/
@@ -47,3 +34,6 @@ Thumbs.db
 
 # Outputs
 site/public/data/
+
+# Notebooks
+*.ipynb
