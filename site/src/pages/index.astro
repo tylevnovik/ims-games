@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { isRankingEligible } from "../lib/ranking";
 
 let meta = { total_games: 0, total_sources: 0, total_reviews: 0, algorithm_version: "0.1.0", data_sources: [] };
 let topGames: any[] = [];
@@ -24,7 +25,7 @@ try {
   if (fs.existsSync(gamesPath)) {
     const games = JSON.parse(fs.readFileSync(gamesPath, "utf-8"));
     topGames = games
-      .filter((g: any) => g.ims_weighted != null)
+      .filter(isRankingEligible)
       .sort((a: any, b: any) => b.ims_weighted - a.ims_weighted)
       .slice(0, 10);
   }

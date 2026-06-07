@@ -2,12 +2,11 @@ import { useMemo } from "react";
 import type { GameSummary } from "../lib/types";
 import { useLang } from "../lib/i18n";
 import { base } from "../lib/base";
+import { isRankingEligible } from "../lib/ranking";
 
 interface Props {
   games: GameSummary[];
 }
-
-const MIN_GOAT_REVIEWS = 51;
 
 export default function GoatList({ games }: Props) {
   const [, , t] = useLang();
@@ -17,9 +16,8 @@ export default function GoatList({ games }: Props) {
       games
         .filter(
           (g) =>
-            g.ims_weighted != null &&
+            isRankingEligible(g) &&
             g.release_year != null &&
-            (g.review_count ?? 0) >= MIN_GOAT_REVIEWS,
         )
         .sort((a, b) => (b.ims_weighted ?? 0) - (a.ims_weighted ?? 0)),
     [games],

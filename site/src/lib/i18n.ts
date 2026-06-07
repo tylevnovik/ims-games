@@ -216,7 +216,7 @@ const dict: Record<string, { zh: string; en: string }> = {
   "ds.kaggle_source": { zh: "原始来源：Kaggle（公开可用数据集）", en: "Original source: Kaggle (publicly available dataset)" },
   "ds.kaggle_license": { zh: "许可：用于研究的公开数据集", en: "License: Public dataset for research use" },
   "ds.oc_title": { zh: "OpenCritic 数据", en: "OpenCritic Data" },
-  "ds.oc_desc": { zh: "用于增强评论级数据，提供评论者信息、出处信息、评论日期和评论链接；当前用于补齐 2024–2026 以及旧年份低样本游戏。默认不使用模拟数据。", en: "Used for enhanced review-level data with individual critic reviews, outlet information, review dates, and review links; currently backfills 2024–2026 and older low-sample games. Mock data is disabled by default." },
+  "ds.oc_desc": { zh: "用于增强评论级数据，提供评论者信息、出处信息、评论日期和评论链接；当前用于补齐 2024–2026 以及 2010–2023 低样本游戏。默认不使用模拟数据。", en: "Used for enhanced review-level data with individual critic reviews, outlet information, review dates, and review links; currently backfills 2024–2026 and low-sample 2010–2023 games. Mock data is disabled by default." },
   "ds.oc_api": { zh: "优先使用官方 API；没有 API 导出时，可用公开网页快照做静态回填", en: "Prefer the official API; public web snapshots can be used for static backfills when no API export is available" },
   "ds.oc_mock": { zh: "模拟数据仅用于本地概念验证，不参与默认构建", en: "Mock data is only for local proof-of-concept runs and is excluded from default builds" },
   "ds.oc_url": { zh: "每条评论保留其出处 URL 用于归属", en: "Each review retains its provenance URL for attribution" },
@@ -240,7 +240,7 @@ const dict: Record<string, { zh: string; en: string }> = {
   "goat.page_desc": { zh: "基于 IMS 加权分数排名，选出数据库中最伟大的游戏。", en: "Ranked by IMS Weighted Score — the greatest games in our database." },
   "goat.title": { zh: "GOAT", en: "GOAT" },
   "goat.candidates": { zh: "候选排行", en: "Top Candidates" },
-  "goat.based_on": { zh: "排名基于 IMS 加权分（ims_weighted），仅纳入发行年份明确且超过 50 条评论的游戏。", en: "Ranked by IMS Weighted Score, including only games with a known release year and more than 50 reviews." },
+  "goat.based_on": { zh: "排名基于 IMS 加权分（ims_weighted），仅纳入发行年份明确且至少 75 条评论的游戏。", en: "Ranked by IMS Weighted Score, including only games with a known release year and at least 75 reviews." },
   "goat.no_data": { zh: "暂无评分数据。", en: "No score data available." },
 
   // GOTY page

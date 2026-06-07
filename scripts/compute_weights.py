@@ -1,7 +1,10 @@
 """Generate media weights based on source_metrics.
 
-For every source_metric record, calculates composite weight broken down
-by source + genre + platform with human-readable English explanations.
+For every source_metric record, calculates global, genre-specific, and
+platform-specific weights with human-readable English explanations. It avoids
+expanding genre x platform combinations because that grows explosively after
+large OpenCritic backfills while compute_game_scores already has progressive
+fallbacks for genre-only, platform-only, and global weights.
 """
 
 import json
@@ -12,6 +15,9 @@ from datetime import datetime, timezone
 from sqlalchemy import create_engine, text
 
 from config import ALGORITHM_VERSION, DB_URL, ensure_dirs
+
+MAX_GENRE_CONTEXTS = 40
+MAX_PLATFORM_CONTEXTS = 25
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -74,6 +80,16 @@ def _build_explanation(source_name, genre, platform, sample_count, disc_factor, 
     return "".join(parts)
 
 
+def _top_context_keys(coverage, limit):
+    return [
+        key
+        for key, _count in sorted(
+            coverage.items(),
+            key=lambda item: (-int(item[1] or 0), str(item[0])),
+        )[:limit]
+    ]
+
+
 def run() -> None:
     ensure_dirs()
     engine = create_engine(DB_URL, echo=False)
@@ -125,39 +141,39 @@ def run() -> None:
             d_factor = _discrimination_factor(disc_power)
             disclosure = 0.95  # default for v0.1
 
-            genres = list(genre_cov.keys()) if genre_cov else [None]
-            platforms = list(plat_cov.keys()) if plat_cov else [None]
+            contexts: list[tuple[str | None, str | None]] = [(None, None)]
+            contexts.extend((genre, None) for genre in _top_context_keys(genre_cov, MAX_GENRE_CONTEXTS))
+            contexts.extend((None, platform) for platform in _top_context_keys(plat_cov, MAX_PLATFORM_CONTEXTS))
 
-            for genre in genres:
-                for platform in platforms:
-                    g_rel = _genre_relevance(genre, genre_cov, sample_count)
-                    p_rel = _platform_relevance(platform, plat_cov, sample_count)
+            for genre, platform in contexts:
+                g_rel = _genre_relevance(genre, genre_cov, sample_count)
+                p_rel = _platform_relevance(platform, plat_cov, sample_count)
 
-                    ctx_weight = base_weight * s_conf * d_factor * g_rel * p_rel * disclosure
+                ctx_weight = base_weight * s_conf * d_factor * g_rel * p_rel * disclosure
 
-                    explanation = _build_explanation(
-                        src_name, genre, platform, sample_count, d_factor, ctx_weight
-                    )
+                explanation = _build_explanation(
+                    src_name, genre, platform, sample_count, d_factor, ctx_weight
+                )
 
-                    weight_id = f"w-{src_id}-{genre or 'all'}-{platform or 'all'}-{ALGORITHM_VERSION}"
+                weight_id = f"w-{src_id}-{genre or 'all'}-{platform or 'all'}-{ALGORITHM_VERSION}"
 
-                    conn.execute(text("""
-                        INSERT OR REPLACE INTO weights
-                        (weight_id, source_id, algorithm_version, genre, platform,
-                         language, base_weight, context_weight, confidence,
-                         explanation, computed_at)
-                        VALUES (:wid, :sid, :av, :genre, :plat,
-                                NULL, :bw, :cw, :conf, :expl, :now)
-                    """), {
-                        "wid": weight_id, "sid": src_id, "av": ALGORITHM_VERSION,
-                        "genre": genre, "plat": platform,
-                        "bw": base_weight, "cw": round(ctx_weight, 6),
-                        "conf": round(s_conf, 4), "expl": explanation, "now": now,
-                    })
-                    written += 1
+                conn.execute(text("""
+                    INSERT OR REPLACE INTO weights
+                    (weight_id, source_id, algorithm_version, genre, platform,
+                     language, base_weight, context_weight, confidence,
+                     explanation, computed_at)
+                    VALUES (:wid, :sid, :av, :genre, :plat,
+                            NULL, :bw, :cw, :conf, :expl, :now)
+                """), {
+                    "wid": weight_id, "sid": src_id, "av": ALGORITHM_VERSION,
+                    "genre": genre, "plat": platform,
+                    "bw": base_weight, "cw": round(ctx_weight, 6),
+                    "conf": round(s_conf, 4), "expl": explanation, "now": now,
+                })
+                written += 1
 
             if written <= 20 or written % 100 == 0:
-                print(f"  [OK] {src_name}: {len(genres)} genres x {len(platforms)} platforms, "
+                print(f"  [OK] {src_name}: {len(contexts)} contexts, "
                       f"s_conf={s_conf:.2f}, disc={d_factor:.2f}")
 
         print(f"\n[DONE] Wrote {written} weight records.")

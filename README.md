@@ -23,7 +23,7 @@ Transparent, explainable, and extensible game score aggregation system.
 - 语言分布与平台分布可视化
 
 ### GOAT — 史上最伟大游戏（/goat）
-- 基于 IMS 加权分排名，仅纳入发行年份明确且超过 50 条评论的游戏
+- 基于 IMS 加权分排名，仅纳入发行年份明确且至少 75 条评论的游戏
 - #1 以金色奖杯卡片高亮展示
 - Top 2-50 候选排行表格，可跳转游戏详情
 
@@ -57,7 +57,7 @@ Transparent, explainable, and extensible game score aggregation system.
 | 来源 | 内容 | 规模 |
 |------|------|------|
 | Metacritic Kaggle 数据集 | 评论分数、游戏标题 | 12,660 游戏 / 321,000 评论（当前本地快照 2024+ 覆盖很少） |
-| OpenCritic 公开网页快照 | 游戏、媒体评分、评论链接 | 2024–2026 全量回填；2011–2023 可定向修复低样本游戏 |
+| OpenCritic 公开网页快照 | 游戏、媒体评分、评论链接 | 2024–2026 全量回填；2010–2023 可定向修复低样本游戏 |
 | RAWG 数据集 | 开发者、发行商、类型、平台、简介、发行日期 | 889,000 游戏（匹配 11,997 款） |
 | GOTY 颁奖数据 | TGA / BAFTA / GDC 年度最佳 | 2014–2025（官方归档人工整理） |
 
@@ -77,7 +77,7 @@ uv run python scripts/import_opencritic.py
 uv run python scripts/import_opencritic_web.py --years 2024 2025 2026 --write --replace --workers 6 --sleep 0.05
 
 # 5. 可选：用 OpenCritic 定向修复旧年份低样本/疑似截断游戏
-uv run python scripts/import_opencritic_web.py --years 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 --write --only-existing-low-sample --max-existing-reviews 65 --min-opencritic-reviews 20 --workers 6 --sleep 0.05
+uv run python scripts/import_opencritic_web.py --years 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 --write --only-existing-low-sample --max-existing-reviews 50 --min-opencritic-reviews 1 --workers 8 --sleep 0.02
 
 # 6. 跨来源游戏匹配
 uv run python scripts/match_games.py

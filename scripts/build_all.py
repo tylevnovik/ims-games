@@ -116,7 +116,7 @@ def main():
     parser.add_argument(
         "--opencritic-legacy-years",
         nargs="+",
-        default=[str(year) for year in range(2011, 2024)],
+        default=[str(year) for year in range(2010, 2024)],
         help="Years to scan when --include-opencritic-legacy is set.",
     )
     parser.add_argument(
@@ -126,12 +126,12 @@ def main():
     )
     parser.add_argument(
         "--opencritic-legacy-max-existing-reviews",
-        default="65",
+        default="50",
         help="Legacy mode targets existing games with at most this many non-OpenCritic reviews.",
     )
     parser.add_argument(
         "--opencritic-legacy-min-reviews",
-        default="20",
+        default="1",
         help="Legacy mode targets only OpenCritic games with at least this many listed reviews.",
     )
     parser.add_argument(

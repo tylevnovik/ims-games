@@ -101,8 +101,10 @@ def _json_list(items: list[str]) -> str | None:
 
 
 def _normalize_game_title(title: str) -> str:
+    text = str(title or "")
+    text = re.sub(r"\s*\(((?:19|20)\d{2})\)\s*$", "", text)
     ascii_title = (
-        unicodedata.normalize("NFKD", str(title or ""))
+        unicodedata.normalize("NFKD", text)
         .encode("ascii", "ignore")
         .decode("ascii")
     )

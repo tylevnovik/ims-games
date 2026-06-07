@@ -3,6 +3,7 @@ import type { GameSummary } from "../lib/types";
 import { useLang } from "../lib/i18n";
 import { base } from "../lib/base";
 import { GOTY_AWARDS, type YearData } from "../lib/awards-data";
+import { isRankingEligible } from "../lib/ranking";
 
 interface Props {
   games: GameSummary[];
@@ -71,7 +72,7 @@ export default function GotyList({ games }: Props) {
   const imsByYear = useMemo(() => {
     const map = new Map<number, GameSummary[]>();
     games
-      .filter((g) => g.release_year != null && g.ims_weighted != null)
+      .filter((g) => g.release_year != null && isRankingEligible(g))
       .forEach((g) => {
         const y = g.release_year!;
         if (!map.has(y)) map.set(y, []);

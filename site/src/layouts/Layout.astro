@@ -143,7 +143,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
           "data_sources.kaggle.source": { zh: "原始来源：Kaggle（公开可用数据集）", en: "Original source: Kaggle (publicly available dataset)" },
           "data_sources.kaggle.license": { zh: "许可：用于研究的公开数据集", en: "License: Public dataset for research use" },
           "data_sources.opencritic": { zh: "OpenCritic 数据", en: "OpenCritic Data" },
-          "data_sources.opencritic_desc": { zh: "用于增强评论级别数据，包含独立评论、媒体信息、评论日期和评论链接；当前用于补齐 2024\u20132026 以及旧年份低样本游戏。默认不使用模拟数据。", en: "Used for enhanced review-level data with individual critic reviews, outlet information, review dates, and review links; currently backfills 2024\u20132026 and older low-sample games. Mock data is disabled by default." },
+          "data_sources.opencritic_desc": { zh: "用于增强评论级别数据，包含独立评论、媒体信息、评论日期和评论链接；当前用于补齐 2024\u20132026 以及 2010\u20132023 低样本游戏。默认不使用模拟数据。", en: "Used for enhanced review-level data with individual critic reviews, outlet information, review dates, and review links; currently backfills 2024\u20132026 and low-sample 2010\u20132023 games. Mock data is disabled by default." },
           "data_sources.opencritic.api": { zh: "优先使用官方 API；没有 API 导出时，可用公开网页快照做静态回填", en: "Prefer the official API; public web snapshots can be used for static backfills when no API export is available" },
           "data_sources.opencritic.mock": { zh: "模拟数据仅用于本地概念验证，不参与默认构建", en: "Mock data is only for local proof-of-concept runs and is excluded from default builds" },
           "data_sources.opencritic.provenance": { zh: "每条评论保留来源链接用于署名", en: "Each review retains its provenance URL for attribution" },
