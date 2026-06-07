@@ -10,8 +10,19 @@ build/
 # Virtual environments
 .venv/
 
-# Ignore all local data, databases, and logs
-data/
+# Fine-grained local data ignores
+data/db/*.sqlite
+data/**/*.csv
+data/**/*.parquet
+data/**/*.jsonl
+data/**/*.xlsx
+data/*.db
+data/opencritic/web-cache/
+data/logs/
+
+# Whitelist mock/sample data for testing/development
+!data/raw/**/*.csv
+!data/raw/**/*.json
 
 # Node
 node_modules/
