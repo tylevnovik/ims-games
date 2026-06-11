@@ -7,6 +7,7 @@ genre/platform coverage. Results written to source_metrics table.
 import json
 import sys
 from collections import defaultdict
+from datetime import datetime, timezone
 
 import numpy as np
 from sqlalchemy import create_engine, text
@@ -21,21 +22,36 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 
+def _parse_list(raw):
+    if not raw:
+        return []
+    try:
+        result = json.loads(raw) if raw.startswith("[") else [x.strip() for x in raw.split("|")]
+    except (json.JSONDecodeError, TypeError):
+        result = [x.strip() for x in str(raw).split("|") if x.strip()]
+    if not isinstance(result, list):
+        return []
+    return [str(x).strip() for x in result if str(x).strip()]
+
+
 def run() -> None:
     ensure_dirs()
     engine = create_engine(DB_URL, echo=False)
 
     with engine.begin() as conn:
-        # Global stats
-        all_scores = conn.execute(text(
-            "SELECT normalized_score FROM reviews WHERE normalized_score IS NOT NULL"
-        )).fetchall()
+        print("[INFO] Loading scored reviews with game context...")
+        all_reviews = conn.execute(text("""
+            SELECT r.source_id, r.normalized_score, g.genres, g.platforms
+            FROM reviews r
+            JOIN games g ON g.game_id = r.game_id
+            WHERE r.normalized_score IS NOT NULL
+        """)).fetchall()
 
-        if not all_scores:
+        if not all_reviews:
             print("[compute_source_metrics] No valid scores found.")
             return
 
-        global_arr = np.array([r[0] for r in all_scores], dtype=np.float64)
+        global_arr = np.array([r[1] for r in all_reviews], dtype=np.float64)
         global_mean = float(np.mean(global_arr))
         global_std = float(np.std(global_arr, ddof=0))
 
@@ -48,31 +64,30 @@ def run() -> None:
             print("[WARN] No sources found.")
             return
 
+        reviews_by_source: dict[str, list] = defaultdict(list)
+        for row in all_reviews:
+            reviews_by_source[row[0]].append(row)
+
         # Clear previous metrics
         conn.execute(text(
             "DELETE FROM source_metrics WHERE algorithm_version = :v"
         ), {"v": ALGORITHM_VERSION})
 
-        written = 0
+        insert_rows: list[dict] = []
         skipped = 0
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
         for src in sources:
             src_id = src[0]
             src_name = src[1]
 
-            # Get reviews for this source with valid scores
-            reviews = conn.execute(text("""
-                SELECT r.normalized_score, g.genres, g.platforms
-                FROM reviews r
-                JOIN games g ON g.game_id = r.game_id
-                WHERE r.source_id = :sid AND r.normalized_score IS NOT NULL
-            """), {"sid": src_id}).fetchall()
+            reviews = reviews_by_source.get(src_id, [])
 
             if len(reviews) < MIN_REVIEWS:
                 skipped += 1
                 continue
 
-            scores = np.array([r[0] for r in reviews], dtype=np.float64)
+            scores = np.array([r[1] for r in reviews], dtype=np.float64)
             sample_count = len(scores)
             mean_score = float(np.mean(scores))
             score_std = float(np.std(scores, ddof=0))
@@ -86,38 +101,13 @@ def run() -> None:
             genre_cov: dict[str, int] = defaultdict(int)
             plat_cov: dict[str, int] = defaultdict(int)
             for r in reviews:
-                genres_raw = r[1]
-                platforms_raw = r[2]
-                if genres_raw:
-                    try:
-                        genres = json.loads(genres_raw) if genres_raw.startswith("[") else [g.strip() for g in genres_raw.split("|")]
-                    except (json.JSONDecodeError, TypeError):
-                        genres = [g.strip() for g in str(genres_raw).split("|") if g.strip()]
-                    for g in genres:
-                        if isinstance(g, str) and g.strip():
-                            genre_cov[g.strip()] += 1
-                if platforms_raw:
-                    try:
-                        plats = json.loads(platforms_raw) if platforms_raw.startswith("[") else [p.strip() for p in platforms_raw.split("|")]
-                    except (json.JSONDecodeError, TypeError):
-                        plats = [p.strip() for p in str(platforms_raw).split("|") if p.strip()]
-                    for p in plats:
-                        if isinstance(p, str) and p.strip():
-                            plat_cov[p.strip()] += 1
+                for g in _parse_list(r[2]):
+                    genre_cov[g] += 1
+                for p in _parse_list(r[3]):
+                    plat_cov[p] += 1
 
             metric_id = f"sm-{src_id}-{ALGORITHM_VERSION}"
-            from datetime import datetime, timezone
-            now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-            conn.execute(text("""
-                INSERT OR REPLACE INTO source_metrics
-                (metric_id, source_id, algorithm_version, sample_count,
-                 mean_score, score_std, score_bias, discrimination_power,
-                 genre_coverage, platform_coverage, text_quality_score,
-                 disclosure_score, reliability_score, computed_at)
-                VALUES (:mid, :sid, :av, :sc, :ms, :ss, :sb, :dp,
-                        :gc, :pc, NULL, NULL, NULL, :now)
-            """), {
+            insert_rows.append({
                 "mid": metric_id, "sid": src_id, "av": ALGORITHM_VERSION,
                 "sc": sample_count, "ms": round(mean_score, 4),
                 "ss": round(score_std, 4), "sb": round(score_bias, 4),
@@ -126,13 +116,25 @@ def run() -> None:
                 "pc": json.dumps(dict(plat_cov), ensure_ascii=False),
                 "now": now,
             })
-            written += 1
 
+            written = len(insert_rows)
             if written <= 10 or written % 50 == 0:
                 print(f"  [OK] {src_name}: n={sample_count}, mean={mean_score:.1f}, "
                       f"std={score_std:.1f}, bias={score_bias:+.1f}")
 
-        print(f"\n[DONE] Wrote {written} source metrics, skipped {skipped} sources.")
+        if insert_rows:
+            print(f"\n[INFO] Batch inserting {len(insert_rows)} source metrics...")
+            conn.execute(text("""
+                INSERT OR REPLACE INTO source_metrics
+                (metric_id, source_id, algorithm_version, sample_count,
+                 mean_score, score_std, score_bias, discrimination_power,
+                 genre_coverage, platform_coverage, text_quality_score,
+                 disclosure_score, reliability_score, computed_at)
+                VALUES (:mid, :sid, :av, :sc, :ms, :ss, :sb, :dp,
+                        :gc, :pc, NULL, NULL, NULL, :now)
+            """), insert_rows)
+
+        print(f"\n[DONE] Wrote {len(insert_rows)} source metrics, skipped {skipped} sources.")
 
 
 if __name__ == "__main__":

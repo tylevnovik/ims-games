@@ -98,8 +98,16 @@ def main():
         "--include-opencritic-legacy",
         action="store_true",
         help=(
-            "Backfill older existing games whose non-OpenCritic review counts look capped "
-            "or incomplete."
+            "Backfill every existing game that still has no OpenCritic reviews, then "
+            "recompute scores and merge cross-source duplicates."
+        ),
+    )
+    parser.add_argument(
+        "--include-metacritic-web-repair",
+        action="store_true",
+        help=(
+            "Repair capped Metacritic Kaggle samples by replacing targeted 50/100-row "
+            "games with fuller public Metacritic critic-review JSON snapshots."
         ),
     )
     parser.add_argument(
@@ -116,7 +124,7 @@ def main():
     parser.add_argument(
         "--opencritic-legacy-years",
         nargs="+",
-        default=[str(year) for year in range(2010, 2024)],
+        default=[str(year) for year in range(1980, 2024)],
         help="Years to scan when --include-opencritic-legacy is set.",
     )
     parser.add_argument(
@@ -158,6 +166,32 @@ def main():
         action="store_true",
         help="Refetch OpenCritic pages instead of using the local HTML cache.",
     )
+    parser.add_argument(
+        "--metacritic-web-repair-target-sample-counts",
+        nargs="*",
+        default=["50"],
+        help="score_snapshots.sample_count values targeted by --include-metacritic-web-repair.",
+    )
+    parser.add_argument(
+        "--metacritic-web-repair-min-reviews",
+        default="51",
+        help="Minimum public Metacritic critic-review count required for repair.",
+    )
+    parser.add_argument(
+        "--metacritic-web-repair-limit",
+        default=None,
+        help="Limit Metacritic web repair targets for smoke tests.",
+    )
+    parser.add_argument(
+        "--metacritic-web-sleep",
+        default="0.05",
+        help="Delay after each live Metacritic backend fetch, in seconds.",
+    )
+    parser.add_argument(
+        "--refresh-metacritic-cache",
+        action="store_true",
+        help="Refetch Metacritic backend JSON instead of using the local cache.",
+    )
     args = parser.parse_args()
 
     steps = list(PIPELINE_STEPS)
@@ -166,10 +200,23 @@ def main():
         steps.insert(opencritic_insert_at, "import_opencritic_web")
         opencritic_insert_at += 1
     if args.include_opencritic_legacy:
-        steps.insert(opencritic_insert_at, "import_opencritic_web_legacy")
+        steps.insert(opencritic_insert_at, "import_opencritic_web_no_oc")
         opencritic_insert_at += 1
-        if args.opencritic_legacy_target_sample_counts:
-            steps.insert(opencritic_insert_at, "import_opencritic_web_legacy_capped_samples")
+    if args.include_metacritic_web_repair:
+        # Metacritic web repair targets score_snapshots.sample_count values, so it
+        # must run after an initial scoring pass. Then rerun the downstream steps
+        # because the repair replaces capped Kaggle review samples with fuller
+        # Metacritic web review sets.
+        score_insert_at = steps.index("export_static_json")
+        steps[score_insert_at:score_insert_at] = [
+            "import_metacritic_web_repair",
+            "match_games",
+            "canonicalize_entities",
+            "normalize_scores",
+            "compute_source_metrics",
+            "compute_weights",
+            "compute_game_scores",
+        ]
     if args.skip_frontend:
         steps.remove("export_static_json")
 
@@ -182,6 +229,7 @@ def main():
     print(f"  --skip-front : {args.skip_frontend}")
     print(f"  OC web       : {args.include_opencritic_web}")
     print(f"  OC legacy    : {args.include_opencritic_legacy}")
+    print(f"  MC web repair: {args.include_metacritic_web_repair}")
     print()
 
     timings: list[tuple[str, float]] = []
@@ -195,9 +243,11 @@ def main():
 
         script_name = (
             "import_opencritic_web"
-            if step_name in {"import_opencritic_web_legacy", "import_opencritic_web_legacy_capped_samples"}
+            if step_name in {"import_opencritic_web_no_oc", "import_opencritic_web_legacy", "import_opencritic_web_legacy_capped_samples"}
             else step_name
         )
+        if step_name == "import_metacritic_web_repair":
+            script_name = "import_metacritic_web"
         script = SCRIPT_DIR / f"{script_name}.py"
         if not script.exists():
             print(f"  [SKIP] {script_name}.py not found -- script not yet implemented.")
@@ -214,14 +264,12 @@ def main():
             extra.extend(["--workers", args.opencritic_workers, "--sleep", args.opencritic_sleep])
             if args.refresh_opencritic_cache:
                 extra.append("--refresh-cache")
-        elif step_name == "import_opencritic_web_legacy":
+        elif step_name == "import_opencritic_web_no_oc":
             extra = [
                 "--write",
                 "--years",
                 *args.opencritic_legacy_years,
-                "--only-existing-low-sample",
-                "--max-existing-reviews",
-                args.opencritic_legacy_max_existing_reviews,
+                "--only-existing-no-oc",
                 "--min-opencritic-reviews",
                 args.opencritic_legacy_min_reviews,
                 "--workers",
@@ -233,24 +281,19 @@ def main():
                 extra.extend(["--max-games", args.opencritic_legacy_max_games])
             if args.refresh_opencritic_cache:
                 extra.append("--refresh-cache")
-        elif step_name == "import_opencritic_web_legacy_capped_samples":
+        elif step_name == "import_metacritic_web_repair":
             extra = [
                 "--write",
-                "--years",
-                *args.opencritic_legacy_years,
-                "--only-existing-low-sample",
-                "--target-snapshot-sample-counts",
-                *args.opencritic_legacy_target_sample_counts,
-                "--min-opencritic-reviews",
-                args.opencritic_legacy_min_reviews,
-                "--workers",
-                args.opencritic_workers,
+                "--target-sample-counts",
+                *args.metacritic_web_repair_target_sample_counts,
+                "--min-review-count",
+                args.metacritic_web_repair_min_reviews,
                 "--sleep",
-                args.opencritic_sleep,
+                args.metacritic_web_sleep,
             ]
-            if args.opencritic_legacy_max_games:
-                extra.extend(["--max-games", args.opencritic_legacy_max_games])
-            if args.refresh_opencritic_cache:
+            if args.metacritic_web_repair_limit:
+                extra.extend(["--limit", args.metacritic_web_repair_limit])
+            if args.refresh_metacritic_cache:
                 extra.append("--refresh-cache")
 
         try:

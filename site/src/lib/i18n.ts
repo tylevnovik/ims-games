@@ -61,7 +61,6 @@ const dict: Record<string, { zh: string; en: string }> = {
   "col.language": { zh: "语言", en: "Language" },
   "col.region": { zh: "地区", en: "Region" },
   "col.year": { zh: "年份", en: "Year" },
-  "col.metacritic": { zh: "MC", en: "MC" },
   "col.ims_raw": { zh: "IMS 原始", en: "IMS Raw" },
   "col.ims_weighted": { zh: "IMS 加权", en: "IMS Weighted" },
   "col.reviews": { zh: "评论数", en: "Reviews" },
@@ -69,7 +68,6 @@ const dict: Record<string, { zh: string; en: string }> = {
   "col.weight": { zh: "权重", en: "Weight" },
 
   // Score labels
-  "score.metacritic": { zh: "Metacritic", en: "Metacritic" },
   "score.raw": { zh: "IMS 原始", en: "IMS Raw" },
   "score.robust": { zh: "IMS 稳健", en: "IMS Robust" },
   "score.calibrated": { zh: "IMS 校准", en: "IMS Calibrated" },
@@ -78,7 +76,6 @@ const dict: Record<string, { zh: string; en: string }> = {
   "score.na": { zh: "无", en: "N/A" },
 
   // Score tooltips
-  "tooltip.metacritic": { zh: "Metacritic 外部基准分数，非 IMS 算法评分。", en: "External baseline score from Metacritic. Not an IMS algorithm score." },
   "tooltip.raw": { zh: "所有有效归一化评论分数的简单平均。", en: "Simple average of all valid normalized review scores." },
   "tooltip.robust": { zh: "截尾均值：去除最高/最低 5% 的分数，更抗异常值干扰。", en: "Trimmed mean: removes top/bottom 5% of scores. More resistant to outliers." },
   "tooltip.calibrated": { zh: "根据每个媒体的历史评分倾向进行 z-score 校准调整。", en: "Adjusted for each source's historical scoring tendency using z-score calibration." },
@@ -151,7 +148,6 @@ const dict: Record<string, { zh: string; en: string }> = {
   "games.sort_weighted": { zh: "排序：IMS 加权", en: "Sort: IMS Weighted" },
   "games.sort_raw": { zh: "排序：IMS 原始", en: "Sort: IMS Raw" },
   "games.sort_robust": { zh: "排序：IMS 稳健", en: "Sort: IMS Robust" },
-  "games.sort_mc": { zh: "排序：Metacritic", en: "Sort: Metacritic" },
   "games.sort_count": { zh: "排序：评论数", en: "Sort: Review Count" },
   "games.sort_title": { zh: "排序：标题", en: "Sort: Title" },
   "games.found": { zh: "款游戏", en: "games found" },
@@ -199,7 +195,7 @@ const dict: Record<string, { zh: string; en: string }> = {
   "method.wc_platform": { zh: "该游戏平台上的评论越多，相关性越高", en: "More reviews on the game's platform = higher relevance" },
   "method.wc_disclosure": { zh: "评论代码/赞助披露会略微提升权重", en: "Review code/sponsorship disclosure slightly boosts weight" },
   "method.baseline_title": { zh: "外部基准与 IMS 分数", en: "External Baseline vs IMS Scores" },
-  "method.baseline_desc": { zh: "Metacritic 和 OpenCritic 分数仅作为外部基准展示，永远不会混入 IMS 算法分数。页面会清楚区分外部参考分数和 IMS 透明分数。", en: "Metacritic and OpenCritic scores are displayed as external baselines only. They are never mixed into IMS algorithm scores. The page clearly distinguishes between external reference scores and IMS transparent scores." },
+  "method.baseline_desc": { zh: "OpenCritic 等非 Metacritic 分数仅作为外部基准展示，永远不会混入 IMS 算法分数。页面会清楚区分外部参考分数和 IMS 透明分数。", en: "Non-Metacritic baselines such as OpenCritic are displayed as external references only. They are never mixed into IMS algorithm scores. The page clearly distinguishes between external reference scores and IMS transparent scores." },
   "method.limits_title": { zh: "已知限制 (v0.1)", en: "Known Limitations (v0.1)" },
   "method.limit1": { zh: "许多老游戏的类型和平台数据不完整", en: "Genre and platform data is incomplete for many older games" },
   "method.limit2": { zh: "字母等级转换使用固定映射", en: "Letter grade conversions use a fixed mapping" },
@@ -216,7 +212,7 @@ const dict: Record<string, { zh: string; en: string }> = {
   "ds.kaggle_source": { zh: "原始来源：Kaggle（公开可用数据集）", en: "Original source: Kaggle (publicly available dataset)" },
   "ds.kaggle_license": { zh: "许可：用于研究的公开数据集", en: "License: Public dataset for research use" },
   "ds.oc_title": { zh: "OpenCritic 数据", en: "OpenCritic Data" },
-  "ds.oc_desc": { zh: "用于增强评论级数据，提供评论者信息、出处信息、评论日期和评论链接；当前用于补齐 2024–2026 以及 2010–2023 低样本游戏。默认不使用模拟数据。", en: "Used for enhanced review-level data with individual critic reviews, outlet information, review dates, and review links; currently backfills 2024–2026 and low-sample 2010–2023 games. Mock data is disabled by default." },
+  "ds.oc_desc": { zh: "用于增强评论级数据，提供评论者信息、出处信息、评论日期和评论链接；当前用于补齐 2024–2026 以及旧年份尚无 OpenCritic 的游戏。默认不使用模拟数据。", en: "Used for enhanced review-level data with individual critic reviews, outlet information, review dates, and review links; currently backfills 2024–2026 and older games that still have no OpenCritic data. Mock data is disabled by default." },
   "ds.oc_api": { zh: "优先使用官方 API；没有 API 导出时，可用公开网页快照做静态回填", en: "Prefer the official API; public web snapshots can be used for static backfills when no API export is available" },
   "ds.oc_mock": { zh: "模拟数据仅用于本地概念验证，不参与默认构建", en: "Mock data is only for local proof-of-concept runs and is excluded from default builds" },
   "ds.oc_url": { zh: "每条评论保留其出处 URL 用于归属", en: "Each review retains its provenance URL for attribution" },

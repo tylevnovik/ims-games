@@ -71,15 +71,14 @@ try {
             <tr>
               <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" data-col="0" data-type="number"><span data-i18n="col.rank">#</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
               <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" data-col="1" data-type="string"><span data-i18n="col.game">游戏</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
-              <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="2" data-type="number"><span data-i18n="col.metacritic">Metacritic</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
-              <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="3" data-type="number"><span data-i18n="col.ims_raw">IMS 原始分</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
-              <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="4" data-type="number"><span data-i18n="col.ims_weighted">IMS 加权分</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
-              <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="5" data-type="number"><span data-i18n="col.reviews">评论数</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
+              <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="2" data-type="number"><span data-i18n="col.ims_raw">IMS 原始分</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
+              <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="3" data-type="number"><span data-i18n="col.ims_weighted">IMS 加权分</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
+              <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="4" data-type="number"><span data-i18n="col.reviews">评论数</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
             </tr>
           </thead>
           <tbody>
             {topGames.map((game: any, i: number) => (
-              <tr class="border-t border-gray-100 hover:bg-gray-50" data-values={`${i + 1}|${game.title}|${game.metacritic_score ?? -1}|${game.ims_raw ?? -1}|${game.ims_weighted ?? -1}|${game.review_count}`}>
+              <tr class="border-t border-gray-100 hover:bg-gray-50" data-values={`${i + 1}|${game.title}|${game.ims_raw ?? -1}|${game.ims_weighted ?? -1}|${game.review_count}`}>
                 <td class="px-4 py-3 text-gray-400">{i + 1}</td>
                 <td class="px-4 py-3">
                   <a href={`${base}/games/${game.game_id}`} class="text-ims-700 hover:text-ims-500 font-medium">
@@ -87,7 +86,6 @@ try {
                   </a>
                   {game.release_year && <span class="text-gray-400 ml-1">({game.release_year})</span>}
                 </td>
-                <td class="px-4 py-3 text-right font-mono">{game.metacritic_score != null ? game.metacritic_score.toFixed(1) : "N/A"}</td>
                 <td class="px-4 py-3 text-right font-mono">{game.ims_raw != null ? game.ims_raw.toFixed(1) : "N/A"}</td>
                 <td class="px-4 py-3 text-right font-mono font-bold text-ims-700">{game.ims_weighted != null ? game.ims_weighted.toFixed(1) : "N/A"}</td>
                 <td class="px-4 py-3 text-right text-gray-500">{game.review_count}</td>
@@ -126,7 +124,7 @@ try {
       var tbody = table.querySelector("tbody");
       var rows = Array.from(tbody.querySelectorAll("tr"));
       var headers = table.querySelectorAll("th[data-col]");
-      var currentSort = { col: 4, asc: false };
+      var currentSort = { col: 3, asc: false };
 
       function updateIcons() {
         headers.forEach(function (h) {

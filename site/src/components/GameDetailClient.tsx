@@ -54,8 +54,8 @@ export default function GameDetailClient({ gameId }: Props) {
     return <p className="text-center py-20 text-red-500">{t("game.load_error")}</p>;
   }
 
-  const mcBaseline = (game.external_baselines || []).find(
-    (b) => b.source_platform === "metacritic"
+  const visibleBaselines = (game.external_baselines || []).filter(
+    (b) => !["metacritic", "rawg_metacritic"].includes(b.source_platform)
   );
 
   return (
@@ -79,8 +79,7 @@ export default function GameDetailClient({ gameId }: Props) {
       </div>
 
       {/* Score Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-        <ScoreCard label={t("score.metacritic")} score={mcBaseline?.external_score ?? null} tooltip={t("tooltip.metacritic")} isExternal />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
         <ScoreCard label={t("score.raw")} score={game.ims_raw} tooltip={t("tooltip.raw")} />
         <ScoreCard label={t("score.robust")} score={game.ims_robust} tooltip={t("tooltip.robust")} />
         <ScoreCard label={t("score.calibrated")} score={game.ims_calibrated} tooltip={t("tooltip.calibrated")} />
@@ -123,10 +122,10 @@ export default function GameDetailClient({ gameId }: Props) {
       </div>
 
       {/* External Baselines */}
-      {game.external_baselines && game.external_baselines.length > 0 && (
+      {visibleBaselines.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 text-sm">
           <p className="font-medium text-amber-800 mb-1">{t("game.external_baselines")}</p>
-          {game.external_baselines.map((b) => (
+          {visibleBaselines.map((b) => (
             <p key={b.source_platform} className="text-amber-700">
               {b.source_platform}: <strong>{formatScore(b.external_score)}</strong>
               ({b.review_count} {t("col.reviews")}) — <em>{t("game.external_note")}</em>

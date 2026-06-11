@@ -63,6 +63,7 @@ TRAILING_PLATFORM_TAG_RE = re.compile(
     r")\)\s*$",
     re.IGNORECASE,
 )
+TRAILING_YEAR_TAG_RE = re.compile(r"^(?P<base>.+?)\s+\((?P<year>\d{4})\)\s*$")
 
 
 def _now() -> str:
@@ -82,6 +83,13 @@ def _normalize_title(title: str) -> str:
     normalized = re.sub(r"\s+", " ", alnum).strip()
     tokens = [ROMAN_NUMERAL_TOKENS.get(token, token) for token in normalized.split()]
     return " ".join(tokens)
+
+
+def _trailing_year_tag(title: str | None) -> tuple[str, int] | None:
+    match = TRAILING_YEAR_TAG_RE.match(str(title or "").strip())
+    if not match:
+        return None
+    return match.group("base").strip(), int(match.group("year"))
 
 
 def _url_slug_text(url: str | None) -> str:
@@ -157,6 +165,7 @@ def _choose_canonical_game(conn: sqlite3.Connection, game_ids: list[str]) -> str
     rows = conn.execute(
         f"""
         SELECT g.game_id,
+               g.title,
                SUM(CASE WHEN r.data_source='metacritic_kaggle' THEN 1 ELSE 0 END) AS mc_reviews,
                COUNT(r.review_id) AS review_count,
                MIN(g.created_at) AS created_at
@@ -171,6 +180,7 @@ def _choose_canonical_game(conn: sqlite3.Connection, game_ids: list[str]) -> str
         rows,
         key=lambda r: (
             0 if str(r["game_id"]).startswith("mc-") else 1,
+            1 if _trailing_year_tag(r["title"]) else 0,
             -(r["mc_reviews"] or 0),
             -(r["review_count"] or 0),
             str(r["created_at"] or ""),
@@ -291,6 +301,8 @@ def _candidate_game_groups(conn: sqlite3.Connection) -> list[list[str]]:
     ).fetchall()
 
     exact_by_title_year: dict[tuple[str, int], list[str]] = defaultdict(list)
+    plain_by_title_year: dict[tuple[str, int], list[str]] = defaultdict(list)
+    year_tag_by_title_year: dict[tuple[str, int], list[str]] = defaultdict(list)
     title_only: dict[str, list[sqlite3.Row]] = defaultdict(list)
     for row in rows:
         norm = _normalize_title(row["title"])
@@ -300,8 +312,27 @@ def _candidate_game_groups(conn: sqlite3.Connection) -> list[list[str]]:
         if row["release_year"] is not None:
             exact_by_title_year[(norm, int(row["release_year"]))].append(row["game_id"])
 
+        year_tag = _trailing_year_tag(row["title"])
+        if year_tag:
+            base_title, tag_year = year_tag
+            row_year = int(row["release_year"]) if row["release_year"] is not None else None
+            if row_year is None or row_year == tag_year:
+                base_norm = _normalize_title(base_title)
+                if base_norm:
+                    year_tag_by_title_year[(base_norm, tag_year)].append(row["game_id"])
+        elif row["release_year"] is not None:
+            plain_by_title_year[(norm, int(row["release_year"]))].append(row["game_id"])
+
     for ids in exact_by_title_year.values():
         unique = sorted(set(ids))
+        if len(unique) > 1:
+            groups.append(unique)
+
+    for key, tag_ids in year_tag_by_title_year.items():
+        plain_ids = plain_by_title_year.get(key)
+        if not plain_ids:
+            continue
+        unique = sorted(set([*plain_ids, *tag_ids]))
         if len(unique) > 1:
             groups.append(unique)
 

@@ -18,6 +18,8 @@ data/**/*.jsonl
 data/**/*.xlsx
 data/*.db
 data/opencritic/web-cache/
+data/opencritic/search-test/
+data/metacritic/web-cache/
 data/logs/
 
 # Whitelist mock/sample data for testing/development
@@ -51,4 +53,3 @@ site/public/data/
 
 # Windows virtual device bugs
 nul
-

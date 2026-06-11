@@ -75,13 +75,9 @@ def export_games_list(conn):
         SELECT g.game_id, g.title, g.release_year, g.developer, g.publisher,
                g.genres, g.platforms, g.release_date, g.description,
                ss.raw_average, ss.trimmed_mean, ss.calibrated_score,
-               ss.weighted_score, ss.sample_count,
-               eb.external_score AS mc_score,
-               rawg.external_score AS rawg_mc_score
+               ss.weighted_score, ss.sample_count
         FROM games g
         LEFT JOIN score_snapshots ss ON ss.game_id = g.game_id AND ss.algorithm_version = ?
-        LEFT JOIN external_baseline eb ON eb.game_id = g.game_id AND eb.source_platform = 'metacritic'
-        LEFT JOIN external_baseline rawg ON rawg.game_id = g.game_id AND rawg.source_platform = 'rawg_metacritic'
         ORDER BY g.title
     """, (ALGORITHM_VERSION,)).fetchall()
 
@@ -105,8 +101,6 @@ def export_games_list(conn):
             "genres": genres if isinstance(genres, list) else [],
             "platforms": platforms if isinstance(platforms, list) else [],
             "description": r["description"],
-            "metacritic_score": r["mc_score"],
-            "rawg_metacritic_score": r["rawg_mc_score"],
             "ims_raw": r["raw_average"],
             "ims_robust": r["trimmed_mean"],
             "ims_calibrated": r["calibrated_score"],

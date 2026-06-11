@@ -7,13 +7,14 @@ and stores only structured review fields, short snippets, and source links.
 Usage:
     python import_opencritic_web.py --years 2024 2025 2026          # dry run
     python import_opencritic_web.py --years 2024 2025 2026 --write  # write DB
-    python import_opencritic_web.py --years 2011 2012 2013 \
-        --write --only-existing-low-sample                         # legacy cap repair
+    python import_opencritic_web.py --years 1980 1981 1982 1983 \
+        --write --only-existing-no-oc                              # backfill games missing OC
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import html
 import json
@@ -112,6 +113,11 @@ def _year_from_date(date_value: object) -> int | None:
     return int(match.group(1)) if match else None
 
 
+def _parenthetical_year(title: str) -> int | None:
+    match = re.search(r"\((\d{4})\)\s*$", str(title or ""))
+    return int(match.group(1)) if match else None
+
+
 def _json_list(items: list[str]) -> str | None:
     cleaned = []
     for item in items:
@@ -155,6 +161,41 @@ def _absolute_url(url: str) -> str:
     if url.startswith("/"):
         return BASE_URL + url
     return f"{BASE_URL}/{url}"
+
+
+def game_from_opencritic_url(url: str, target_title: str | None = None) -> dict:
+    parsed = urlparse(url)
+    parts = parsed.path.strip("/").split("/")
+    if len(parts) < 3 or parts[0] != "game":
+        raise ValueError(f"Not an OpenCritic game URL: {url}")
+    try:
+        opencritic_id = int(parts[1])
+    except ValueError as exc:
+        raise ValueError(f"OpenCritic game URL has no numeric id: {url}") from exc
+    slug = parts[2]
+    title = target_title or re.sub(r"[-_]+", " ", slug).strip().title()
+    return {
+        "id": opencritic_id,
+        "name": title,
+        "url": f"/game/{opencritic_id}/{slug}",
+    }
+
+
+def load_opencritic_url_targets_csv(path: str) -> list[dict]:
+    targets: list[dict] = []
+    with open(path, "r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            url = (row.get("opencritic_url") or row.get("url") or "").strip()
+            if not url:
+                continue
+            game = game_from_opencritic_url(url, row.get("title"))
+            game_id = (row.get("game_id") or "").strip()
+            if game_id:
+                game["_resolved_existing_game_id"] = game_id
+                game["_identity_suffix"] = game_id
+            targets.append(game)
+    return targets
 
 
 class OpenCriticWebClient:
@@ -378,14 +419,19 @@ def connect_db(db_path: Path) -> sqlite3.Connection:
 def load_existing_game_lookup(conn: sqlite3.Connection) -> dict:
     by_title_year = {}
     by_title: dict[str, list[str]] = {}
+    by_id: dict[str, dict[str, object]] = {}
     for row in conn.execute("SELECT game_id, title, release_year FROM games"):
         norm = _normalize_game_title(row["title"])
         if not norm:
             continue
+        by_id[row["game_id"]] = {
+            "title": row["title"],
+            "release_year": row["release_year"],
+        }
         if row["release_year"] is not None:
             by_title_year[(norm, int(row["release_year"]))] = row["game_id"]
         by_title.setdefault(norm, []).append(row["game_id"])
-    return {"by_title_year": by_title_year, "by_title": by_title}
+    return {"by_title_year": by_title_year, "by_title": by_title, "by_id": by_id}
 
 
 def load_non_opencritic_review_counts(conn: sqlite3.Connection) -> dict[str, int]:
@@ -398,6 +444,22 @@ def load_non_opencritic_review_counts(conn: sqlite3.Connection) -> dict[str, int
         """
     ).fetchall()
     return {row["game_id"]: int(row["c"] or 0) for row in rows}
+
+
+def load_games_without_opencritic_reviews(conn: sqlite3.Connection) -> dict[str, int]:
+    """Return existing games with zero opencritic_web reviews and their non-OC review count."""
+    rows = conn.execute(
+        """
+        SELECT g.game_id,
+               SUM(CASE WHEN r.data_source = 'opencritic_web' THEN 1 ELSE 0 END) AS oc_count,
+               SUM(CASE WHEN r.data_source <> 'opencritic_web' THEN 1 ELSE 0 END) AS non_oc_count
+        FROM games g
+        LEFT JOIN reviews r ON r.game_id = g.game_id AND r.normalized_score IS NOT NULL
+        GROUP BY g.game_id
+        HAVING oc_count = 0 AND non_oc_count > 0
+        """
+    ).fetchall()
+    return {row["game_id"]: int(row["non_oc_count"] or 0) for row in rows}
 
 
 def load_snapshot_target_counts(
@@ -444,15 +506,37 @@ def _lookup_game_ids(norm: str, release_year: int | None, lookup: dict) -> list[
     return ids
 
 
+def _filter_year_mismatched_ids(
+    ids: list[str],
+    release_year: int | None,
+    lookup: dict,
+) -> list[str]:
+    if release_year is None:
+        return ids
+    filtered = []
+    for game_id in ids:
+        meta = lookup.get("by_id", {}).get(game_id, {})
+        local_title = str(meta.get("title") or "")
+        local_year = meta.get("release_year") or _parenthetical_year(local_title)
+        if local_year is not None and abs(int(local_year) - release_year) > 1:
+            continue
+        filtered.append(game_id)
+    return filtered
+
+
 def resolve_game_ids(title: str, release_year: int | None, lookup: dict) -> list[str]:
     norm = _normalize_game_title(title)
     if not norm:
         return []
-    ids = _lookup_game_ids(norm, release_year, lookup)
+    ids = _filter_year_mismatched_ids(_lookup_game_ids(norm, release_year, lookup), release_year, lookup)
     if ids:
         return ids
     for alias_norm in COMBINED_GAME_TITLE_ALIASES.get(norm, ()):
-        for game_id in _lookup_game_ids(alias_norm, release_year, lookup):
+        for game_id in _filter_year_mismatched_ids(
+            _lookup_game_ids(alias_norm, release_year, lookup),
+            release_year,
+            lookup,
+        ):
             if game_id not in ids:
                 ids.append(game_id)
     return ids
@@ -543,6 +627,46 @@ def filter_existing_low_sample_games(
             if target_snapshot_counts is not None
             else ""
         )
+    )
+    return selected
+
+
+def filter_existing_no_oc_games(
+    games: list[dict],
+    year: int,
+    lookup: dict,
+    existing_counts: dict[str, int],
+    min_opencritic_reviews: int,
+) -> list[dict]:
+    """Target every existing DB game that still has no OpenCritic reviews."""
+    selected: list[dict] = []
+    skipped_unmatched = 0
+    skipped_low_opencritic = 0
+
+    for game in games:
+        game_ids = resolved_existing_game_ids(game, year, lookup, existing_counts)
+        if not game_ids:
+            skipped_unmatched += 1
+            continue
+
+        oc_reviews = int(game.get("numReviews") or 0)
+        for game_id in game_ids:
+            current_reviews = existing_counts.get(game_id, 0)
+            if oc_reviews < min_opencritic_reviews:
+                skipped_low_opencritic += 1
+                continue
+
+            target_game = dict(game)
+            target_game["_resolved_existing_game_id"] = game_id
+            target_game["_existing_review_count"] = current_reviews
+            if len(game_ids) > 1:
+                target_game["_identity_suffix"] = game_id
+            selected.append(target_game)
+
+    print(
+        "[opencritic_web] No-OC filter: "
+        f"selected={len(selected)}, unmatched={skipped_unmatched}, "
+        f"low_oc_gain={skipped_low_opencritic}"
     )
     return selected
 
@@ -785,7 +909,12 @@ def run(args: argparse.Namespace) -> None:
     )
 
     db_path = Path(args.db_path) if args.db_path else DB_PATH
-    conn = connect_db(db_path) if (args.write or args.only_existing_low_sample) else None
+    conn = connect_db(db_path) if (
+        args.write
+        or args.only_existing_low_sample
+        or args.only_existing_no_oc
+        or args.opencritic_urls_csv
+    ) else None
     now = _now()
 
     totals = {
@@ -806,16 +935,83 @@ def run(args: argparse.Namespace) -> None:
             if conn and target_sample_counts
             else None
         )
-        existing_counts = load_non_opencritic_review_counts(conn) if conn and args.only_existing_low_sample else {}
-        if target_snapshot_counts:
-            for game_id in target_snapshot_counts:
-                existing_counts.setdefault(game_id, target_snapshot_counts[game_id]["non_opencritic_count"])
+        if conn and args.only_existing_no_oc:
+            existing_counts = load_games_without_opencritic_reviews(conn)
+            print(f"[opencritic_web] {len(existing_counts):,} existing games without OpenCritic reviews")
+        elif conn and args.only_existing_low_sample:
+            existing_counts = load_non_opencritic_review_counts(conn)
+            if target_snapshot_counts:
+                for game_id in target_snapshot_counts:
+                    existing_counts.setdefault(
+                        game_id, target_snapshot_counts[game_id]["non_opencritic_count"]
+                    )
+        else:
+            existing_counts = {}
+
+        if args.opencritic_urls_csv:
+            games = load_opencritic_url_targets_csv(args.opencritic_urls_csv)
+            print(f"\n[opencritic_web] Loaded {len(games):,} direct OpenCritic URL targets")
+            if args.list_only:
+                totals["games_seen"] += len(games)
+                for idx, game in enumerate(games[: args.list_preview], start=1):
+                    print(
+                        f"  [{idx}/{len(games)}] {game.get('name')} "
+                        f"(oc_id={game.get('id')}, target={game.get('_resolved_existing_game_id') or 'new'})"
+                    )
+                if len(games) > args.list_preview:
+                    print(f"  ... {len(games) - args.list_preview} more URL targets")
+            else:
+                def handle_url_game(idx: int, game: dict, detail: dict, reviews: list[dict]) -> None:
+                    title = game.get("name") or f"OpenCritic game {game.get('id')}"
+                    print(f"  [{idx}/{len(games)}] {title} (direct URL, oc={game.get('id')})")
+                    totals["games_seen"] += 1
+                    totals["reviews_seen"] += len(reviews)
+
+                    if not args.write:
+                        print(f"      dry-run: {len(reviews)} review rows")
+                        return
+
+                    written = write_game_payload(conn, game, detail, reviews, now, game_lookup)
+                    totals["games_written"] += 1
+                    totals["reviews_written"] += written
+                    print(f"      wrote {written}/{len(reviews)} numeric reviews")
+
+                if args.workers <= 1:
+                    for idx, game in enumerate(games, start=1):
+                        detail, reviews = fetch_reviews_for_game(client, game, args.max_review_pages)
+                        handle_url_game(idx, game, detail, reviews)
+                else:
+                    print(f"[opencritic_web] Fetching direct URL review pages with {args.workers} workers")
+                    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+                        future_map = {
+                            executor.submit(fetch_reviews_for_game, client, game, args.max_review_pages): game
+                            for game in games
+                        }
+                        for idx, future in enumerate(as_completed(future_map), start=1):
+                            game = future_map.pop(future)
+                            detail, reviews = future.result()
+                            handle_url_game(idx, game, detail, reviews)
+
+                if args.write and conn:
+                    conn.commit()
+
+            if args.url_targets_only:
+                args.years = []
 
         for year in args.years:
             print(f"\n[opencritic_web] Fetching year {year}...")
             games = fetch_games_for_year(client, year, args.max_pages, args.max_games)
             print(f"[opencritic_web] {year}: {len(games)} games discovered")
-            if args.only_existing_low_sample:
+            if args.only_existing_no_oc:
+                games = filter_existing_no_oc_games(
+                    games=games,
+                    year=year,
+                    lookup=game_lookup,
+                    existing_counts=existing_counts,
+                    min_opencritic_reviews=args.min_opencritic_reviews,
+                )
+                print(f"[opencritic_web] {year}: {len(games)} targeted games after filtering")
+            elif args.only_existing_low_sample:
                 games = filter_existing_low_sample_games(
                     games=games,
                     year=year,
@@ -911,6 +1107,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--list-only", action="store_true", help="Only list discovered/targeted games; do not fetch review pages.")
     parser.add_argument("--list-preview", type=int, default=20, help="Rows to print per year with --list-only.")
     parser.add_argument(
+        "--only-existing-no-oc",
+        action="store_true",
+        help=(
+            "Fetch OpenCritic reviews for every existing DB game that still has zero "
+            "opencritic_web reviews, regardless of its current non-OpenCritic sample count."
+        ),
+    )
+    parser.add_argument(
         "--only-existing-low-sample",
         action="store_true",
         help="Only fetch OpenCritic reviews for games already in the DB with low non-OpenCritic sample counts.",
@@ -937,6 +1141,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "of these values. Useful for repairing capped samples such as 50 or 100."
         ),
     )
+    parser.add_argument(
+        "--opencritic-urls-csv",
+        default=None,
+        help="CSV with opencritic_url/url and optional game_id/title for direct title-search repairs.",
+    )
+    parser.add_argument(
+        "--url-targets-only",
+        action="store_true",
+        help="When --opencritic-urls-csv is provided, process only those URL targets and skip year scans.",
+    )
     parser.add_argument("--cache-dir", default=None, help="HTML cache directory.")
     parser.add_argument("--db-path", default=None, help="SQLite DB path. Defaults to data/db/ims_games.sqlite.")
     parser.add_argument("--refresh-cache", action="store_true", help="Ignore cached HTML and refetch.")
@@ -950,6 +1164,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv or sys.argv[1:])
+    if args.only_existing_no_oc and args.only_existing_low_sample:
+        print(
+            "[opencritic_web] ERROR: --only-existing-no-oc and --only-existing-low-sample "
+            "are mutually exclusive.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     try:
         run(args)
     except Exception as exc:

@@ -12,14 +12,14 @@ Transparent, explainable, and extensible game score aggregation system.
 
 ### 游戏库（/games）
 - 15,000+ 款游戏，支持搜索、年份/类型/平台筛选、多列排序
-- 每款游戏展示 IMS 原始分、稳健分、校准分、加权分及 Metacritic 基准分
+- 每款游戏展示 IMS 原始分、稳健分、校准分与加权分
 - 开发者、发行商、类型、平台、简介等元数据（由 RAWG 数据集补全）
 
 ### 游戏详情页（/games/{id}）
 - 分数分布柱状图（0-100 十档，显示均值与评论数）
 - 评论表格：内联搜索、语言/平台筛选、点击列头排序
 - 自定义评分权重面板：语言筛选、平台筛选、排除异常值、降低/提升媒体权重
-- 外部基准分数对比（Metacritic、RAWG Metacritic）
+- 外部基准分数对比（仅展示 OpenCritic 等非 Metacritic 基准）
 - 语言分布与平台分布可视化
 
 ### GOAT — 史上最伟大游戏（/goat）
@@ -57,7 +57,7 @@ Transparent, explainable, and extensible game score aggregation system.
 | 来源 | 内容 | 规模 |
 |------|------|------|
 | Metacritic Kaggle 数据集 | 评论分数、游戏标题 | 12,660 游戏 / 321,000 评论（当前本地快照 2024+ 覆盖很少） |
-| OpenCritic 公开网页快照 | 游戏、媒体评分、评论链接 | 2024–2026 全量回填；2010–2023 可定向修复低样本游戏 |
+| OpenCritic 公开网页快照 | 游戏、媒体评分、评论链接 | 2024–2026 全量回填；1980–2023 可为尚无 OC 的游戏定向回填 |
 | RAWG 数据集 | 开发者、发行商、类型、平台、简介、发行日期 | 889,000 游戏（匹配 11,997 款） |
 | GOTY 颁奖数据 | TGA / BAFTA / GDC 年度最佳 | 2014–2025（官方归档人工整理） |
 
@@ -76,11 +76,11 @@ uv run python scripts/import_opencritic.py
 # 4. 可选：回填 OpenCritic 公开网页快照（适合补 2024–2026）
 uv run python scripts/import_opencritic_web.py --years 2024 2025 2026 --write --replace --workers 6 --sleep 0.05
 
-# 5. 可选：用 OpenCritic 定向修复旧年份低样本/疑似截断游戏
-uv run python scripts/import_opencritic_web.py --years 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 --write --only-existing-low-sample --max-existing-reviews 50 --min-opencritic-reviews 1 --workers 8 --sleep 0.02
+# 5. 可选：为所有尚无 OpenCritic 评论的游戏回填 OC 数据并归并
+uv run python scripts/import_opencritic_web.py --years 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 --write --only-existing-no-oc --min-opencritic-reviews 1 --workers 8 --sleep 0.02
 
-# 5b. 可选：修复当前快照中精确 50/100 条评论的疑似截断样本
-uv run python scripts/import_opencritic_web.py --years 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 --write --only-existing-low-sample --target-snapshot-sample-counts 50 100 --min-opencritic-reviews 1 --workers 8 --sleep 0.02
+# 或通过 build_all 一键执行（含后续归并重算）：
+# uv run python scripts/build_all.py --include-opencritic-legacy
 
 # 6. 跨来源游戏匹配
 uv run python scripts/match_games.py
@@ -116,7 +116,7 @@ uv run python scripts/build_all.py
 # 一键执行，并补 OpenCritic 2024–2026 网页快照
 uv run python scripts/build_all.py --include-opencritic-web
 
-# 一键执行，并同时修复旧年份低样本/疑似截断游戏
+# 一键执行，并同时回填旧年份无 OpenCritic 的游戏
 uv run python scripts/build_all.py --include-opencritic-web --include-opencritic-legacy
 
 # 慢速/抽样调试：限制每年游戏数或调低并发

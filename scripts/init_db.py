@@ -16,6 +16,7 @@ from sqlalchemy import (
     Text,
     create_engine,
     inspect,
+    text,
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -228,6 +229,31 @@ ALL_TABLES = [
 ]
 
 
+INDEX_STATEMENTS = [
+    "CREATE INDEX IF NOT EXISTS idx_reviews_game_id ON reviews(game_id)",
+    "CREATE INDEX IF NOT EXISTS idx_reviews_source_id ON reviews(source_id)",
+    "CREATE INDEX IF NOT EXISTS idx_reviews_data_source ON reviews(data_source)",
+    "CREATE INDEX IF NOT EXISTS idx_reviews_game_data_source ON reviews(game_id, data_source)",
+    "CREATE INDEX IF NOT EXISTS idx_reviews_game_score ON reviews(game_id, normalized_score)",
+    "CREATE INDEX IF NOT EXISTS idx_score_snapshots_game_version ON score_snapshots(game_id, algorithm_version)",
+    "CREATE INDEX IF NOT EXISTS idx_score_snapshots_version_sample ON score_snapshots(algorithm_version, sample_count)",
+    "CREATE INDEX IF NOT EXISTS idx_source_metrics_source_version ON source_metrics(source_id, algorithm_version)",
+    "CREATE INDEX IF NOT EXISTS idx_weights_source_version ON weights(source_id, algorithm_version)",
+    "CREATE INDEX IF NOT EXISTS idx_game_identity_source_external ON game_identity(source_name, external_id)",
+    "CREATE INDEX IF NOT EXISTS idx_game_identity_game_id ON game_identity(game_id)",
+    "CREATE INDEX IF NOT EXISTS idx_external_baseline_game_id ON external_baseline(game_id)",
+    "CREATE INDEX IF NOT EXISTS idx_external_baseline_data_source ON external_baseline(data_source)",
+]
+
+
+def ensure_indexes(engine) -> None:
+    """Create idempotent indexes used by import, scoring, and static export."""
+    with engine.begin() as conn:
+        for statement in INDEX_STATEMENTS:
+            conn.execute(text(statement))
+        conn.execute(text("PRAGMA optimize"))
+
+
 def init_database(rebuild: bool = False) -> None:
     """Create (and optionally drop) all tables in the SQLite database."""
     ensure_dirs()
@@ -247,14 +273,17 @@ def init_database(rebuild: bool = False) -> None:
     to_create = [t for t in ALL_TABLES if t.__tablename__ not in existing]
 
     if not to_create and not rebuild:
-        print("[init_db] All tables already exist. Nothing to do.")
+        ensure_indexes(engine)
+        print("[init_db] All tables already exist. Indexes verified.")
         return
 
     # Create tables
     Base.metadata.create_all(engine)
+    ensure_indexes(engine)
 
     created_names = [t.__tablename__ for t in ALL_TABLES]
     print(f"[init_db] Database ready at: {DB_PATH}")
+    print(f"[init_db] Indexes verified ({len(INDEX_STATEMENTS)}).")
     print(f"[init_db] Tables ({len(created_names)}):")
     for name in created_names:
         status = "created" if name in [t.__tablename__ for t in to_create] or rebuild else "exists"

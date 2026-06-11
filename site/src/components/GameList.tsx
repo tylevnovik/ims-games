@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import type { GameSummary } from "../lib/types";
 import { useLang } from "../lib/i18n";
 import { base } from "../lib/base";
+import { IMS_SORT_FIELDS, compareImsSort } from "../lib/ranking";
 
 interface Props {
   games: GameSummary[];
@@ -68,15 +69,18 @@ export default function GameList({ games }: Props) {
     if (platformFilter) {
       result = result.filter((g) => (g.platforms || []).includes(platformFilter));
     }
-    result = [...result].sort((a: any, b: any) => {
+    result = [...result].sort((a: GameSummary, b: GameSummary) => {
       if (stringFields.has(sortBy)) {
-        const va = (a[sortBy] ?? "") as string;
-        const vb = (b[sortBy] ?? "") as string;
+        const va = (a[sortBy as keyof GameSummary] ?? "") as string;
+        const vb = (b[sortBy as keyof GameSummary] ?? "") as string;
         return sortDir === "desc" ? vb.localeCompare(va) : va.localeCompare(vb);
       }
-      const va = a[sortBy] ?? -1;
-      const vb = b[sortBy] ?? -1;
-      return sortDir === "desc" ? (vb as number) - (va as number) : (va as number) - (vb as number);
+      if (IMS_SORT_FIELDS.has(sortBy)) {
+        return compareImsSort(a, b, sortBy, sortDir);
+      }
+      const va = (a as Record<string, number | null>)[sortBy] ?? -1;
+      const vb = (b as Record<string, number | null>)[sortBy] ?? -1;
+      return sortDir === "desc" ? vb - va : va - vb;
     });
     return result;
   }, [games, search, yearFilter, genreFilter, platformFilter, sortBy, sortDir]);
@@ -120,7 +124,6 @@ export default function GameList({ games }: Props) {
             <tr>
               <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" onClick={() => toggleSort("title")}>{t("col.game")}{sortIcon("title")}</th>
               <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" onClick={() => toggleSort("release_year")}>{t("col.year")}{sortIcon("release_year")}</th>
-              <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" onClick={() => toggleSort("metacritic_score")}>{t("col.metacritic")}{sortIcon("metacritic_score")}</th>
               <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" onClick={() => toggleSort("ims_raw")}>{t("col.ims_raw")}{sortIcon("ims_raw")}</th>
               <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" onClick={() => toggleSort("ims_weighted")}>{t("col.ims_weighted")}{sortIcon("ims_weighted")}</th>
               <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" onClick={() => toggleSort("review_count")}>{t("col.reviews")}{sortIcon("review_count")}</th>
@@ -138,7 +141,6 @@ export default function GameList({ games }: Props) {
                   </div>
                 </td>
                 <td className="px-4 py-2 text-gray-500">{g.release_year || "—"}</td>
-                <td className="px-4 py-2 text-right font-mono text-gray-600">{fmt(g.metacritic_score)}</td>
                 <td className="px-4 py-2 text-right font-mono text-gray-600">{fmt(g.ims_raw)}</td>
                 <td className="px-4 py-2 text-right font-mono font-bold text-ims-700">{fmt(g.ims_weighted)}</td>
                 <td className="px-4 py-2 text-right text-gray-500">{g.review_count}</td>

@@ -242,12 +242,12 @@ def run_import() -> None:
         for start in range(0, len(df), chunk_size):
             chunk = df.iloc[start : start + chunk_size]
             review_rows = []
-            for _, row in chunk.iterrows():
-                rid = review_id_for(int(row["ID"]))
-                gid = game_id_map[row["Game"]]
-                sid = source_id_map[row["Website"]]
-                tid = target_id_map[row["Game"]]
-                score = float(row["Score"])
+            for row in chunk[["ID", "Game", "Website", "Review", "Score"]].itertuples(index=False):
+                rid = review_id_for(int(row.ID))
+                gid = game_id_map[row.Game]
+                sid = source_id_map[row.Website]
+                tid = target_id_map[row.Game]
+                score = float(row.Score)
 
                 review_rows.append({
                     "review_id": rid,
@@ -265,7 +265,7 @@ def run_import() -> None:
                     "review_date": None,
                     "platform": None,
                     "language": "en",
-                    "summary": _truncate(str(row.get("Review", "")), 2000),
+                    "summary": _truncate(str(row.Review), 2000),
                     "positive_points": None,
                     "negative_points": None,
                     "has_review_code_disclosure": None,

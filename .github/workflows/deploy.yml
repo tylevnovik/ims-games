@@ -42,14 +42,15 @@ jobs:
           mkdir -p data/db
           gh release download data-v0.1.0 \
             --repo ${{ github.repository }} \
-            --pattern "ims_games.sqlite" \
+            --pattern "ims_games.sqlite.tar.gz" \
             --dir data/db/ \
             --clobber || {
             echo "ERROR: Could not download database from release data-v0.1.0"
-            echo "Make sure the release exists with the ims_games.sqlite asset."
-            echo "Create it with: gh release create data-v0.1.0 data/db/ims_games.sqlite"
+            echo "Make sure the release exists with the ims_games.sqlite.tar.gz asset."
+            echo "Create it with: tar -czf ims_games.sqlite.tar.gz -C data/db ims_games.sqlite"
             exit 1
           }
+          tar -xzf data/db/ims_games.sqlite.tar.gz -C data/db
           ls -lh data/db/ims_games.sqlite
 
       - name: Export static JSON

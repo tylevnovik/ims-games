@@ -82,13 +82,6 @@ export default function GoatList({ games }: Props) {
           </div>
           <div>
             <span className="text-2xl font-bold text-gray-600">
-              {fmt(goat.metacritic_score)}
-            </span>
-            <br />
-            <span className="text-gray-400">{t("col.metacritic")}</span>
-          </div>
-          <div>
-            <span className="text-2xl font-bold text-gray-600">
               {goat.review_count}
             </span>
             <br />
@@ -119,9 +112,6 @@ export default function GoatList({ games }: Props) {
               </th>
               <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">
                 {t("col.ims_raw")}
-              </th>
-              <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">
-                {t("col.metacritic")}
               </th>
               <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">
                 {t("col.reviews")}
@@ -159,9 +149,6 @@ export default function GoatList({ games }: Props) {
                 </td>
                 <td className="px-4 py-2.5 text-right font-mono text-gray-600 hidden sm:table-cell">
                   {fmt(g.ims_raw)}
-                </td>
-                <td className="px-4 py-2.5 text-right font-mono text-gray-600 hidden sm:table-cell">
-                  {fmt(g.metacritic_score)}
                 </td>
                 <td className="px-4 py-2.5 text-right text-gray-500 hidden sm:table-cell">
                   {g.review_count}

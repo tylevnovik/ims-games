@@ -238,9 +238,6 @@ export default function GotyList({ games }: Props) {
                   {t("col.ims_weighted")}
                 </th>
                 <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">
-                  {t("col.metacritic")}
-                </th>
-                <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">
                   {t("col.reviews")}
                 </th>
               </tr>
@@ -283,9 +280,6 @@ export default function GotyList({ games }: Props) {
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono font-bold text-ims-700">
                       {fmt(g.ims_weighted)}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono text-gray-600 hidden sm:table-cell">
-                      {fmt(g.metacritic_score)}
                     </td>
                     <td className="px-4 py-2.5 text-right text-gray-500 hidden sm:table-cell">
                       {g.review_count}

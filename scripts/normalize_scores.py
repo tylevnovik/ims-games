@@ -36,6 +36,17 @@ def _try_float(raw) -> float | None:
         return None
 
 
+def _same_score(left, right) -> bool:
+    if left is None and right is None:
+        return True
+    if left is None or right is None:
+        return False
+    try:
+        return abs(float(left) - float(right)) < 1e-9
+    except (TypeError, ValueError):
+        return False
+
+
 def normalize_score(original_score_value, original_score_scale, score_type) -> tuple[float | None, str, str]:
     """Returns (normalized_value, score_type, rule_applied)."""
     if original_score_value is None:
@@ -123,28 +134,30 @@ def run() -> None:
         else:
             non_numeric += 1
 
-        updates.append({
-            "review_id": r["review_id"],
-            "normalized_score": norm_val,
-            "score_type": stype,
-        })
+        if not _same_score(r["normalized_score"], norm_val) or r["score_type"] != stype:
+            updates.append({
+                "review_id": r["review_id"],
+                "normalized_score": norm_val,
+                "score_type": stype,
+            })
 
     # Batch update
+    update_stmt = text("""
+        UPDATE reviews
+        SET normalized_score = :normalized_score, score_type = :score_type
+        WHERE review_id = :review_id
+    """)
     with engine.begin() as conn:
         batch_size = 10000
         for i in range(0, len(updates), batch_size):
             batch = updates[i:i + batch_size]
-            for upd in batch:
-                conn.execute(text("""
-                    UPDATE reviews
-                    SET normalized_score = :ns, score_type = :st
-                    WHERE review_id = :rid
-                """), {"ns": upd["normalized_score"], "st": upd["score_type"], "rid": upd["review_id"]})
+            conn.execute(update_stmt, batch)
 
     print(f"\n=== Score Normalization Summary ===")
     print(f"  Total reviews processed : {len(rows):,}")
     print(f"  Converted to 0-100      : {converted:,}")
     print(f"  Non-numeric (null)      : {non_numeric:,}")
+    print(f"  Rows updated            : {len(updates):,}")
     print(f"\n  Distribution of original_score_scale:")
     for label in sorted(scale_dist.keys(), key=lambda x: (x == "None", x)):
         print(f"    {label:>12s} : {scale_dist[label]:,}")
