@@ -14,6 +14,7 @@ if (fs.existsSync(sourcesPath)) {
 <Layout title="媒体源">
   <h1 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="sources.title">媒体源</h1>
   <p class="text-gray-600 mb-6" data-i18n="sources.description">IMS Games 收录的所有评论媒体及其历史表现指标。</p>
+  <p class="text-sm text-gray-500 mb-4" data-i18n="sources.weight_note">此页的权重是该媒体在全部类型/平台上下文中的平均上下文权重；游戏详情评论表展示的是媒体全局权重，IMS 加权分计算时会优先匹配当前游戏的类型/平台上下文。</p>
 
   <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
     <table id="sources-table" class="w-full text-sm">
@@ -25,7 +26,7 @@ if (fs.existsSync(sourcesPath)) {
           <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600" data-col="3" data-type="string"><span data-i18n="sources.col.region">地区</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
           <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="4" data-type="number"><span data-i18n="sources.col.reviews">评论数</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
           <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="5" data-type="number"><span data-i18n="sources.col.avg_score">平均分</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
-          <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="6" data-type="number"><span data-i18n="sources.col.weight">权重</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
+          <th class="px-4 py-3 font-medium cursor-pointer select-none hover:text-ims-600 text-right" data-col="6" data-type="number"><span data-i18n="sources.col.weight">平均上下文权重</span> <span class="sort-icon text-gray-400 ml-1"></span></th>
         </tr>
       </thead>
       <tbody>

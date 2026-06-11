@@ -115,7 +115,11 @@ export default function ReviewTable({ reviews }: Props) {
                 {t("review.normalized")}{sortIcon("score")}
               </th>
               <th className="px-3 py-2 font-medium text-right cursor-pointer select-none hover:text-ims-600" onClick={() => toggleSort("weight")}>
-                {t("review.weight")}{sortIcon("weight")}
+                <span className="inline-flex items-center justify-end gap-1">
+                  <span>{t("review.weight")}</span>
+                  <span title={t("review.weight_hint")} className="text-xs text-gray-400 cursor-help">?</span>
+                  {sortIcon("weight")}
+                </span>
               </th>
               <th className="px-3 py-2 font-medium cursor-pointer select-none hover:text-ims-600" onClick={() => toggleSort("date")}>
                 {t("review.date")}{sortIcon("date")}

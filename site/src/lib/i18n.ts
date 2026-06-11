@@ -96,7 +96,11 @@ const dict: Record<string, { zh: string; en: string }> = {
   "review.source": { zh: "来源", en: "Source" },
   "review.raw": { zh: "原始", en: "Raw" },
   "review.normalized": { zh: "归一化", en: "Normalized" },
-  "review.weight": { zh: "权重", en: "Weight" },
+  "review.weight": { zh: "全局权重", en: "Global Weight" },
+  "review.weight_hint": {
+    zh: "此处展示媒体全局权重；媒体源页展示的是全部类型/平台上下文权重的平均值。IMS 加权分计算时会优先匹配当前游戏的类型/平台上下文。",
+    en: "This shows the source's global weight. The Sources page shows the average of all genre/platform context weights. IMS Weighted scoring prefers the current game's matching genre/platform context.",
+  },
   "review.date": { zh: "日期", en: "Date" },
   "review.lang": { zh: "语言", en: "Lang" },
   "review.summary": { zh: "摘要", en: "Summary" },
@@ -160,6 +164,10 @@ const dict: Record<string, { zh: string; en: string }> = {
   // Sources list
   "sources.title": { zh: "媒体源", en: "Media Sources" },
   "sources.desc": { zh: "IMS Games 收录的所有评论媒体及其历史表现指标。", en: "All review sources tracked by IMS Games, with historical performance metrics." },
+  "sources.weight_note": {
+    zh: "此页的权重是该媒体在全部类型/平台上下文中的平均上下文权重；游戏详情评论表展示的是媒体全局权重，IMS 加权分计算时会优先匹配当前游戏的类型/平台上下文。",
+    en: "Weights on this page are average context weights across all genre/platform contexts for each source. Review tables show the source's global weight; IMS Weighted scoring prefers the current game's matching genre/platform context.",
+  },
   "sources.total": { zh: "个媒体源", en: "sources total" },
 
   // Methodology page
