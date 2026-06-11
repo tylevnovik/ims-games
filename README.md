@@ -82,6 +82,9 @@ uv run python scripts/import_opencritic_web.py --years 1980 1981 1982 1983 1984 
 # 或通过 build_all 一键执行（含后续归并重算）：
 # uv run python scripts/build_all.py --include-opencritic-legacy
 
+# 可选：用 Metacritic 产品页补全年份缺失的高分游戏元数据
+uv run python scripts/import_metacritic_web.py --metadata-missing-years --write
+
 # 6. 跨来源游戏匹配
 uv run python scripts/match_games.py
 
@@ -119,6 +122,9 @@ uv run python scripts/build_all.py --include-opencritic-web
 # 一键执行，并同时回填旧年份无 OpenCritic 的游戏
 uv run python scripts/build_all.py --include-opencritic-web --include-opencritic-legacy
 
+# 一键执行，并补 Metacritic 产品页中的缺失年份元数据
+uv run python scripts/build_all.py --include-metacritic-metadata-repair
+
 # 慢速/抽样调试：限制每年游戏数或调低并发
 uv run python scripts/build_all.py --include-opencritic-web --opencritic-max-games 50 --opencritic-workers 2
 ```
@@ -149,6 +155,7 @@ npm run build
 │   ├── config.py               # 配置（DB 路径、算法版本）
 │   ├── init_db.py              # 初始化 SQLite 数据库
 │   ├── import_metacritic_kaggle.py  # 导入 Kaggle 数据
+│   ├── import_metacritic_web.py # Metacritic 网页评论/产品元数据修复
 │   ├── import_opencritic_web.py # OpenCritic 公开网页快照回填
 │   ├── canonicalize_entities.py # 多源游戏/媒体实体规范化
 │   ├── normalize_scores.py     # 分数归一化

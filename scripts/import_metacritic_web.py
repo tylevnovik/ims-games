@@ -1,15 +1,17 @@
-"""Repair capped Metacritic samples from public Metacritic critic-review pages.
+"""Repair Metacritic-backed reviews and metadata from public web JSON.
 
 The Kaggle Metacritic snapshot used by this project often caps well-known games
 at exactly 50 critic rows. This importer targets those existing games, fetches
 Metacritic's public JSON endpoints by title slug, verifies title/year matches,
 and replaces the capped Kaggle rows for that game with the fuller web review
-set.
+set. It can also fill missing release-year metadata for high-confidence modern
+games by reading the Metacritic product endpoint without importing reviews.
 
 Usage:
     python import_metacritic_web.py --list-only --limit 30
     python import_metacritic_web.py --write --limit 30
     python import_metacritic_web.py --write --target-sample-counts 50 100
+    python import_metacritic_web.py --metadata-missing-years --write
 """
 
 from __future__ import annotations
@@ -85,6 +87,7 @@ def _ascii_text(value: str) -> str:
 def _slugify(title: str) -> str:
     text = _ascii_text(title).lower()
     text = text.replace("&", " and ")
+    text = text.replace("+", " plus ")
     text = re.sub(r"['’]", "", text)
     text = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
     return re.sub(r"-+", "-", text)
@@ -105,14 +108,36 @@ def _slug_candidates(title: str, manual_slug: str | None = None) -> list[str]:
     full_slug = _slugify(title)
     stripped_title = re.sub(r"\s*\((\d{4})\)\s*$", "", str(title or "")).strip()
     stripped_slug = _slugify(stripped_title)
+    full_slug_without_plus = _slugify(str(title or "").replace("+", " "))
+    stripped_slug_without_plus = _slugify(stripped_title.replace("+", " "))
+    colon_prefix = str(stripped_title or title or "").split(":", 1)[0].strip()
+    colon_prefix_slug = _slugify(colon_prefix)
+    featuring_prefix_slugs: list[str] = []
+    for marker in (" featuring ", " feat. ", " feat "):
+        lowered = f" {stripped_title.lower()} "
+        if marker in lowered:
+            prefix = stripped_title[: lowered.index(marker) - 1].strip()
+            if prefix:
+                featuring_prefix_slugs.append(_slugify(prefix))
     year = _paren_year(title)
 
     if year and stripped_slug:
         candidates.append(f"{stripped_slug}-{year}")
+    if year and stripped_slug_without_plus:
+        candidates.append(f"{stripped_slug_without_plus}-{year}")
     if full_slug:
         candidates.append(full_slug)
+    if full_slug_without_plus:
+        candidates.append(full_slug_without_plus)
     if stripped_slug:
         candidates.append(stripped_slug)
+    if stripped_slug_without_plus:
+        candidates.append(stripped_slug_without_plus)
+    for slug in featuring_prefix_slugs:
+        if slug:
+            candidates.append(slug)
+    if colon_prefix_slug and colon_prefix_slug not in {full_slug, stripped_slug}:
+        candidates.append(colon_prefix_slug)
 
     unique: list[str] = []
     for slug in candidates:
@@ -287,6 +312,9 @@ def connect_db(db_path: Path) -> sqlite3.Connection:
 
 
 def load_targets(conn: sqlite3.Connection, args: argparse.Namespace) -> list[TargetGame]:
+    if args.metadata_missing_years:
+        return load_metadata_targets(conn, args)
+
     csv_targets = load_targets_csv(args.targets_csv) if args.targets_csv else {}
 
     placeholders = ",".join("?" for _ in args.target_sample_counts)
@@ -315,6 +343,58 @@ def load_targets(conn: sqlite3.Connection, args: argparse.Namespace) -> list[Tar
         ORDER BY ss.weighted_score DESC, g.title
         """,
         (*params, 1 if args.only_no_opencritic else 0, 1 if args.skip_existing_web else 0),
+    ).fetchall()
+
+    targets = [
+        TargetGame(
+            game_id=row["game_id"],
+            title=row["title"],
+            release_year=row["release_year"],
+            sample_count=int(row["sample_count"] or 0),
+            weighted_score=row["weighted_score"],
+            opencritic_count=int(row["opencritic_count"] or 0),
+            metacritic_kaggle_count=int(row["metacritic_kaggle_count"] or 0),
+            metacritic_web_count=int(row["metacritic_web_count"] or 0),
+            manual_slug=csv_targets.get(row["game_id"]) or csv_targets.get(row["title"]),
+        )
+        for row in rows
+    ]
+    if args.limit:
+        targets = targets[: args.limit]
+    return targets
+
+
+def load_metadata_targets(conn: sqlite3.Connection, args: argparse.Namespace) -> list[TargetGame]:
+    csv_targets = load_targets_csv(args.targets_csv) if args.targets_csv else {}
+    params: list[object] = [
+        ALGORITHM_VERSION,
+        args.metadata_min_score,
+        args.metadata_min_sample_count,
+        1 if args.metadata_require_opencritic else 0,
+        1 if args.metadata_skip_existing_identity else 0,
+    ]
+    rows = conn.execute(
+        """
+        SELECT g.game_id, g.title, g.release_year,
+               ss.sample_count, ss.weighted_score,
+               SUM(CASE WHEN r.data_source = 'opencritic_web' THEN 1 ELSE 0 END) AS opencritic_count,
+               SUM(CASE WHEN r.data_source = 'metacritic_kaggle' THEN 1 ELSE 0 END) AS metacritic_kaggle_count,
+               SUM(CASE WHEN r.data_source = 'metacritic_web' THEN 1 ELSE 0 END) AS metacritic_web_count,
+               MAX(CASE WHEN gi.source_name = 'metacritic_web' THEN 1 ELSE 0 END) AS has_metacritic_identity
+        FROM score_snapshots ss
+        JOIN games g ON g.game_id = ss.game_id
+        JOIN reviews r ON r.game_id = ss.game_id AND r.normalized_score IS NOT NULL
+        LEFT JOIN game_identity gi ON gi.game_id = g.game_id
+        WHERE ss.algorithm_version = ?
+          AND g.release_year IS NULL
+          AND ss.weighted_score >= ?
+          AND ss.sample_count >= ?
+        GROUP BY g.game_id
+        HAVING (? = 0 OR opencritic_count > 0)
+           AND (? = 0 OR has_metacritic_identity = 0)
+        ORDER BY ss.weighted_score DESC, ss.sample_count DESC, g.title
+        """,
+        params,
     ).fetchall()
 
     targets = [
@@ -574,6 +654,56 @@ def replace_game_reviews(
     return written
 
 
+def write_product_metadata(
+    conn: sqlite3.Connection,
+    target: TargetGame,
+    slug: str,
+    product: dict,
+    now: str,
+) -> None:
+    repair_game_metadata(conn, target, product, now)
+
+    source_url = f"{BASE_URL}/game/{slug}/"
+    score_summary = product.get("criticScoreSummary") or {}
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO game_identity
+        (identity_id, game_id, source_name, external_id, external_slug,
+         external_title, external_url, match_confidence, match_method,
+         needs_manual_review, created_at, updated_at)
+        VALUES (?, ?, 'metacritic_web', NULL, ?, ?, ?, 0.95,
+                'metacritic_metadata_title', 0, ?, ?)
+        """,
+        (
+            _identity_id(target.game_id),
+            target.game_id,
+            slug,
+            product.get("title"),
+            source_url,
+            now,
+            now,
+        ),
+    )
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO external_baseline
+        (baseline_id, game_id, target_id, source_platform, external_score,
+         external_user_score, review_count, user_review_count, source_url,
+         collected_at, data_source, license_note)
+        VALUES (?, ?, NULL, 'metacritic', ?, NULL, ?, NULL, ?, ?,
+                'metacritic_web', 'Metacritic public web JSON product snapshot')
+        """,
+        (
+            _baseline_id(target.game_id),
+            target.game_id,
+            float(score_summary["score"]) if score_summary.get("score") is not None else None,
+            int(score_summary["reviewCount"]) if score_summary.get("reviewCount") is not None else None,
+            source_url,
+            now,
+        ),
+    )
+
+
 def run(args: argparse.Namespace) -> None:
     ensure_dirs()
     cache_dir = Path(args.cache_dir) if args.cache_dir else METACRITIC_WEB_DIR
@@ -616,6 +746,28 @@ def run(args: argparse.Namespace) -> None:
                 print(f"      skip: {reason or 'no product match'}")
                 continue
 
+            product_year = product.get("premiereYear") or _year_from_date(product.get("releaseDate"))
+            if args.metadata_missing_years:
+                if not product_year:
+                    totals["skipped"] += 1
+                    print(f"      skip: product has no release year, slug={slug}")
+                    continue
+
+                totals["matched"] += 1
+                print(
+                    f"      match: slug={slug}, product_year={product_year}, "
+                    f"reason={reason}"
+                )
+
+                if args.list_only or not args.write:
+                    continue
+
+                write_product_metadata(conn, target, slug, product, now)
+                totals["games_written"] += 1
+                conn.commit()
+                print("      wrote metacritic_web product metadata")
+                continue
+
             summary = product.get("criticScoreSummary") or {}
             listed_count = int(summary.get("reviewCount") or 0)
             if listed_count < args.min_review_count:
@@ -634,7 +786,6 @@ def run(args: argparse.Namespace) -> None:
                 continue
 
             totals["matched"] += 1
-            product_year = product.get("premiereYear") or _year_from_date(product.get("releaseDate"))
             print(
                 f"      match: slug={slug}, product_year={product_year}, "
                 f"listed={listed_count}, fetched={len(numeric_reviews)}, reason={reason}"
@@ -674,9 +825,38 @@ def run(args: argparse.Namespace) -> None:
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Repair capped Metacritic samples from public web JSON.")
+    parser = argparse.ArgumentParser(description="Repair Metacritic reviews or metadata from public web JSON.")
     parser.add_argument("--write", action="store_true", help="Write to SQLite. Default is dry-run.")
     parser.add_argument("--list-only", action="store_true", help="Resolve targets and fetch reviews, but do not write.")
+    parser.add_argument(
+        "--metadata-missing-years",
+        action="store_true",
+        help="Fill missing game release years from Metacritic product metadata instead of importing reviews.",
+    )
+    parser.add_argument(
+        "--metadata-min-score",
+        type=float,
+        default=85.0,
+        help="Minimum IMS weighted score for --metadata-missing-years targets.",
+    )
+    parser.add_argument(
+        "--metadata-min-sample-count",
+        type=int,
+        default=75,
+        help="Minimum review sample count for --metadata-missing-years targets.",
+    )
+    parser.add_argument(
+        "--metadata-require-opencritic",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Require at least one OpenCritic review for --metadata-missing-years targets.",
+    )
+    parser.add_argument(
+        "--metadata-skip-existing-identity",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Skip games that already have a metacritic_web identity row in metadata mode.",
+    )
     parser.add_argument("--target-sample-counts", nargs="*", type=int, default=[50])
     parser.add_argument("--only-no-opencritic", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--skip-existing-web", action=argparse.BooleanOptionalAction, default=True)

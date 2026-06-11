@@ -111,6 +111,14 @@ def main():
         ),
     )
     parser.add_argument(
+        "--include-metacritic-metadata-repair",
+        action="store_true",
+        help=(
+            "Fill missing release years for high-confidence games from Metacritic "
+            "public product JSON before exporting static site data."
+        ),
+    )
+    parser.add_argument(
         "--opencritic-years",
         nargs="+",
         default=["2024", "2025", "2026"],
@@ -188,6 +196,22 @@ def main():
         help="Delay after each live Metacritic backend fetch, in seconds.",
     )
     parser.add_argument(
+        "--metacritic-metadata-min-score",
+        default="85",
+        help="Minimum weighted score for --include-metacritic-metadata-repair targets.",
+    )
+    parser.add_argument(
+        "--metacritic-metadata-min-sample-count",
+        default="75",
+        help="Minimum review count for --include-metacritic-metadata-repair targets.",
+    )
+    parser.add_argument(
+        "--metacritic-metadata-require-opencritic",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Require OpenCritic coverage for Metacritic metadata repair targets.",
+    )
+    parser.add_argument(
         "--refresh-metacritic-cache",
         action="store_true",
         help="Refetch Metacritic backend JSON instead of using the local cache.",
@@ -217,6 +241,8 @@ def main():
             "compute_weights",
             "compute_game_scores",
         ]
+    if args.include_metacritic_metadata_repair:
+        steps.insert(steps.index("export_static_json"), "import_metacritic_metadata_repair")
     if args.skip_frontend:
         steps.remove("export_static_json")
 
@@ -230,6 +256,7 @@ def main():
     print(f"  OC web       : {args.include_opencritic_web}")
     print(f"  OC legacy    : {args.include_opencritic_legacy}")
     print(f"  MC web repair: {args.include_metacritic_web_repair}")
+    print(f"  MC metadata  : {args.include_metacritic_metadata_repair}")
     print()
 
     timings: list[tuple[str, float]] = []
@@ -247,6 +274,8 @@ def main():
             else step_name
         )
         if step_name == "import_metacritic_web_repair":
+            script_name = "import_metacritic_web"
+        if step_name == "import_metacritic_metadata_repair":
             script_name = "import_metacritic_web"
         script = SCRIPT_DIR / f"{script_name}.py"
         if not script.exists():
@@ -293,6 +322,23 @@ def main():
             ]
             if args.metacritic_web_repair_limit:
                 extra.extend(["--limit", args.metacritic_web_repair_limit])
+            if args.refresh_metacritic_cache:
+                extra.append("--refresh-cache")
+        elif step_name == "import_metacritic_metadata_repair":
+            extra = [
+                "--write",
+                "--metadata-missing-years",
+                "--metadata-min-score",
+                args.metacritic_metadata_min_score,
+                "--metadata-min-sample-count",
+                args.metacritic_metadata_min_sample_count,
+                "--sleep",
+                args.metacritic_web_sleep,
+            ]
+            if args.metacritic_metadata_require_opencritic:
+                extra.append("--metadata-require-opencritic")
+            else:
+                extra.append("--no-metadata-require-opencritic")
             if args.refresh_metacritic_cache:
                 extra.append("--refresh-cache")
 
