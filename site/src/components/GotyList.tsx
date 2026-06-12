@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import type { GameSummary } from "../lib/types";
 import { useLang } from "../lib/i18n";
-import { base } from "../lib/base";
+import { gameHref } from "../lib/base";
 import { GOTY_AWARDS, type YearData } from "../lib/awards-data";
 import { isRankingEligible } from "../lib/ranking";
 
@@ -158,7 +158,7 @@ export default function GotyList({ games }: Props) {
               </div>
               {matched ? (
                 <a
-                  href={`${base}/games/${matched.game_id}`}
+                  href={gameHref(matched.game_id)}
                   className={`text-lg font-bold ${style.text} hover:underline block`}
                 >
                   {matched.title}
@@ -187,7 +187,7 @@ export default function GotyList({ games }: Props) {
                         <li key={nom}>
                           {nomGame ? (
                             <a
-                              href={`${base}/games/${nomGame.game_id}`}
+                              href={gameHref(nomGame.game_id)}
                               className="hover:text-ims-600"
                             >
                               {nom}
@@ -264,7 +264,7 @@ export default function GotyList({ games }: Props) {
                     </td>
                     <td className="px-4 py-2.5">
                       <a
-                        href={`${base}/games/${g.game_id}`}
+                        href={gameHref(g.game_id)}
                         className="text-ims-700 hover:text-ims-500 font-medium"
                       >
                         {g.title}

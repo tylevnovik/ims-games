@@ -15,7 +15,7 @@ Transparent, explainable, and extensible game score aggregation system.
 - 每款游戏展示 IMS 原始分、稳健分、校准分与加权分
 - 开发者、发行商、类型、平台、简介等元数据（由 RAWG 数据集补全）
 
-### 游戏详情页（/games/{id}）
+### 游戏详情页（/games/detail?id={id}）
 - 分数分布柱状图（0-100 十档，显示均值与评论数）
 - 评论表格：内联搜索、语言/平台筛选、点击列头排序
 - 自定义评分权重面板：语言筛选、平台筛选、排除异常值、降低/提升媒体权重
@@ -48,6 +48,7 @@ Transparent, explainable, and extensible game score aggregation system.
 ## 技术栈
 
 - **前端**：Astro 5 + React 19 + TypeScript + Tailwind CSS 3
+- **前端运行时/包管理**：Bun 1.3.14
 - **数据处理**：Python 3.11+、pandas、SQLite（通过 uv 管理）
 - **部署**：GitHub Pages + GitHub Actions 自动化构建
 - **数据库存储**：GitHub Release（SQLite 文件，CI 自动下载）
@@ -139,13 +140,13 @@ uv sync
 uv run python scripts/build_all.py
 
 # 安装前端依赖
-cd site && npm install
+cd site && bun install
 
 # 本地开发服务器
-npm run dev
+bun run dev
 
 # 生产构建
-npm run build
+bun run build
 ```
 
 ## 项目结构
@@ -186,11 +187,11 @@ npm run build
 │   │   └── pages/
 │   │       ├── index.astro          # 首页
 │   │       ├── games/index.astro    # 游戏库
-│   │       ├── games/[game_id].astro # 游戏详情
+│   │       ├── games/detail.astro    # 游戏详情（单路由，按需加载单个游戏 JSON）
 │   │       ├── goat.astro           # GOAT 页面
 │   │       ├── goty.astro           # GOTY 页面
 │   │       ├── sources/index.astro  # 媒体源列表
-│   │       ├── sources/[source_id].astro # 媒体详情
+│   │       ├── sources/detail.astro # 媒体详情（单路由，按需加载单个媒体 JSON）
 │   │       ├── methodology.astro    # 算法说明
 │   │       └── data-sources.astro   # 数据来源
 │   └── public/data/            # 静态 JSON 数据（由管线生成）

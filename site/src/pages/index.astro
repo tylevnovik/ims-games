@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { isRankingEligible } from "../lib/ranking";
+import { gameHref } from "../lib/base";
 
 let meta = { total_games: 0, total_sources: 0, total_reviews: 0, algorithm_version: "0.1.0", data_sources: [] };
 let topGames: any[] = [];
@@ -81,7 +82,7 @@ try {
               <tr class="border-t border-gray-100 hover:bg-gray-50" data-values={`${i + 1}|${game.title}|${game.ims_raw ?? -1}|${game.ims_weighted ?? -1}|${game.review_count}`}>
                 <td class="px-4 py-3 text-gray-400">{i + 1}</td>
                 <td class="px-4 py-3">
-                  <a href={`${base}/games/${game.game_id}`} class="text-ims-700 hover:text-ims-500 font-medium">
+                  <a href={gameHref(game.game_id)} class="text-ims-700 hover:text-ims-500 font-medium">
                     {game.title}
                   </a>
                   {game.release_year && <span class="text-gray-400 ml-1">({game.release_year})</span>}

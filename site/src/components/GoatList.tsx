@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { GameSummary } from "../lib/types";
 import { useLang } from "../lib/i18n";
-import { base } from "../lib/base";
+import { gameHref } from "../lib/base";
 import { isRankingEligible } from "../lib/ranking";
 
 interface Props {
@@ -50,7 +50,7 @@ export default function GoatList({ games }: Props) {
           {t("goat.title")}
         </p>
         <a
-          href={`${base}/games/${goat.game_id}`}
+          href={gameHref(goat.game_id)}
           className="block text-2xl sm:text-4xl font-bold text-gray-900 hover:text-ims-600 transition-colors mb-2"
         >
           {goat.title}
@@ -129,7 +129,7 @@ export default function GoatList({ games }: Props) {
                 </td>
                 <td className="px-4 py-2.5">
                   <a
-                    href={`${base}/games/${g.game_id}`}
+                    href={gameHref(g.game_id)}
                     className="text-ims-700 hover:text-ims-500 font-medium"
                   >
                     {g.title}

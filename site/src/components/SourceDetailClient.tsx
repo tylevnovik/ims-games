@@ -2,26 +2,58 @@ import { useState, useEffect } from "react";
 import type { SourceDetail } from "../lib/types";
 import { formatScore } from "../lib/score";
 import { useLang } from "../lib/i18n";
-import { base } from "../lib/base";
+import { base, gameHref } from "../lib/base";
 
 interface Props {
-  sourceId: string;
+  sourceId?: string;
 }
 
 export default function SourceDetailClient({ sourceId }: Props) {
   const [lang, , t] = useLang();
+  const [resolvedSourceId, setResolvedSourceId] = useState<string | null | undefined>(sourceId);
   const [source, setSource] = useState<SourceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    if (sourceId) {
+      setResolvedSourceId(sourceId);
+      return;
+    }
+    setResolvedSourceId(new URLSearchParams(window.location.search).get("id"));
+  }, [sourceId]);
+
+  useEffect(() => {
+    if (resolvedSourceId === undefined) return;
+
+    if (!resolvedSourceId) {
+      setSource(null);
+      setLoading(false);
+      setError(true);
+      return;
+    }
+
+    let cancelled = false;
     setLoading(true);
     setError(false);
-    fetch(`${base}/data/sources/${sourceId}.json`)
+    fetch(`${base}/data/sources/${resolvedSourceId}.json`)
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-      .then((data) => { setSource(data); setLoading(false); })
-      .catch(() => { setError(true); setLoading(false); });
-  }, [sourceId]);
+      .then((data) => {
+        if (cancelled) return;
+        setSource(data);
+        setLoading(false);
+        document.title = `${data.name} | IMS Games`;
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setError(true);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedSourceId]);
 
   if (loading) {
     return (
@@ -33,7 +65,7 @@ export default function SourceDetailClient({ sourceId }: Props) {
   }
 
   if (error || !source) {
-    return <p className="text-center py-20 text-red-500">{t("game.load_error")}</p>;
+    return <p role="alert" className="text-center py-20 text-red-500">{t("game.load_error")}</p>;
   }
 
   const m = source.metrics || {};
@@ -107,7 +139,7 @@ export default function SourceDetailClient({ sourceId }: Props) {
               {source.recent_reviews.map((r, i) => (
                 <tr key={i} className="border-t border-gray-100">
                   <td className="px-3 py-2">
-                    <a href={`${base}/games/${r.game_id}`} className="text-ims-700 hover:text-ims-500">{r.game_title}</a>
+                    <a href={gameHref(r.game_id)} className="text-ims-700 hover:text-ims-500">{r.game_title}</a>
                   </td>
                   <td className="px-3 py-2 text-right font-mono font-bold">{formatScore(r.score)}</td>
                   <td className="px-3 py-2 text-gray-500">{r.date || "—"}</td>

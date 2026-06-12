@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import type { GameSummary } from "../lib/types";
 import { useLang } from "../lib/i18n";
-import { base } from "../lib/base";
-import { IMS_SORT_FIELDS, compareImsSort } from "../lib/ranking";
+import { gameHref } from "../lib/base";
+import { compareImsSort, isImsSortField } from "../lib/ranking";
 
 interface Props {
   games: GameSummary[];
@@ -53,6 +53,10 @@ export default function GameList({ games }: Props) {
   };
 
   const stringFields = new Set(["title"]);
+  const numericFields = new Set(["release_year", "review_count"]);
+  type NumericSortField = "release_year" | "review_count";
+  const isNumericField = (field: string): field is NumericSortField =>
+    numericFields.has(field);
 
   const filtered = useMemo(() => {
     let result = games;
@@ -75,11 +79,12 @@ export default function GameList({ games }: Props) {
         const vb = (b[sortBy as keyof GameSummary] ?? "") as string;
         return sortDir === "desc" ? vb.localeCompare(va) : va.localeCompare(vb);
       }
-      if (IMS_SORT_FIELDS.has(sortBy)) {
+      if (isImsSortField(sortBy)) {
         return compareImsSort(a, b, sortBy, sortDir);
       }
-      const va = (a as Record<string, number | null>)[sortBy] ?? -1;
-      const vb = (b as Record<string, number | null>)[sortBy] ?? -1;
+      if (!isNumericField(sortBy)) return 0;
+      const va = a[sortBy] ?? -1;
+      const vb = b[sortBy] ?? -1;
       return sortDir === "desc" ? vb - va : va - vb;
     });
     return result;
@@ -133,7 +138,7 @@ export default function GameList({ games }: Props) {
             {paged.map((g) => (
               <tr key={g.game_id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-2">
-                  <a href={`${base}/games/${g.game_id}`} className="text-ims-700 hover:text-ims-500 font-medium">{g.title}</a>
+                  <a href={gameHref(g.game_id)} className="text-ims-700 hover:text-ims-500 font-medium">{g.title}</a>
                   <div className="text-xs text-gray-400 mt-0.5">
                     {g.developer && <span>{g.developer}</span>}
                     {g.developer && (g.genres || []).length > 0 && <span> &middot; </span>}

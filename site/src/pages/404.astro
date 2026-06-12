@@ -1,0 +1,36 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+---
+
+<Layout title="未找到">
+  <section class="text-center py-16">
+    <h1 class="text-3xl font-bold text-gray-900 mb-3">404</h1>
+    <p class="text-gray-500">页面不存在。</p>
+    <a href={base || "/"} class="inline-block mt-6 text-ims-700 hover:text-ims-500">
+      返回首页
+    </a>
+  </section>
+
+  <script define:vars={{ base }}>
+    (function () {
+      var path = window.location.pathname.replace(/\/$/, "");
+
+      function redirectLegacyDetail(section) {
+        var prefix = (base || "") + "/" + section + "/";
+        if (!path.startsWith(prefix)) return false;
+
+        var id = path.slice(prefix.length);
+        if (!id || id === "detail") return false;
+
+        window.location.replace(
+          (base || "") + "/" + section + "/detail?id=" + encodeURIComponent(decodeURIComponent(id)),
+        );
+        return true;
+      }
+
+      redirectLegacyDetail("games") || redirectLegacyDetail("sources");
+    })();
+  </script>
+</Layout>

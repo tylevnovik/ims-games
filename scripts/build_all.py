@@ -226,6 +226,9 @@ def main():
     if args.include_opencritic_legacy:
         steps.insert(opencritic_insert_at, "import_opencritic_web_no_oc")
         opencritic_insert_at += 1
+        if args.opencritic_legacy_target_sample_counts:
+            steps.insert(opencritic_insert_at, "import_opencritic_web_legacy_capped_samples")
+            opencritic_insert_at += 1
     if args.include_metacritic_web_repair:
         # Metacritic web repair targets score_snapshots.sample_count values, so it
         # must run after an initial scoring pass. Then rerun the downstream steps
@@ -301,6 +304,27 @@ def main():
                 "--only-existing-no-oc",
                 "--min-opencritic-reviews",
                 args.opencritic_legacy_min_reviews,
+                "--workers",
+                args.opencritic_workers,
+                "--sleep",
+                args.opencritic_sleep,
+            ]
+            if args.opencritic_legacy_max_games:
+                extra.extend(["--max-games", args.opencritic_legacy_max_games])
+            if args.refresh_opencritic_cache:
+                extra.append("--refresh-cache")
+        elif step_name == "import_opencritic_web_legacy_capped_samples":
+            extra = [
+                "--write",
+                "--years",
+                *args.opencritic_legacy_years,
+                "--only-existing-low-sample",
+                "--max-existing-reviews",
+                args.opencritic_legacy_max_existing_reviews,
+                "--min-opencritic-reviews",
+                args.opencritic_legacy_min_reviews,
+                "--target-snapshot-sample-counts",
+                *args.opencritic_legacy_target_sample_counts,
                 "--workers",
                 args.opencritic_workers,
                 "--sleep",

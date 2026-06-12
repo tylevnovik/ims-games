@@ -47,6 +47,7 @@ Thumbs.db
 
 # Outputs
 site/public/data/
+marketing/
 
 # Notebooks
 *.ipynb

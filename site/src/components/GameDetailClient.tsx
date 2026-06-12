@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import type { GameDetail, CustomWeightConfig } from "../lib/types";
-import { computeCustomScore, formatScore, getScoreBg } from "../lib/score";
+import { computeCustomScore, formatScore } from "../lib/score";
 import { useLang } from "../lib/i18n";
 import { base } from "../lib/base";
 import ScoreCard from "./ScoreCard";
@@ -9,23 +9,55 @@ import CustomWeightPanel from "./CustomWeightPanel";
 import ScoreDistributionChart from "./ScoreDistributionChart";
 
 interface Props {
-  gameId: string;
+  gameId?: string;
 }
 
 export default function GameDetailClient({ gameId }: Props) {
   const [lang, , t] = useLang();
+  const [resolvedGameId, setResolvedGameId] = useState<string | null | undefined>(gameId);
   const [game, setGame] = useState<GameDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    if (gameId) {
+      setResolvedGameId(gameId);
+      return;
+    }
+    setResolvedGameId(new URLSearchParams(window.location.search).get("id"));
+  }, [gameId]);
+
+  useEffect(() => {
+    if (resolvedGameId === undefined) return;
+
+    if (!resolvedGameId) {
+      setGame(null);
+      setLoading(false);
+      setError(true);
+      return;
+    }
+
+    let cancelled = false;
     setLoading(true);
     setError(false);
-    fetch(`${base}/data/games/${gameId}.json`)
+    fetch(`${base}/data/games/${resolvedGameId}.json`)
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-      .then((data) => { setGame(data); setLoading(false); })
-      .catch(() => { setError(true); setLoading(false); });
-  }, [gameId]);
+      .then((data) => {
+        if (cancelled) return;
+        setGame(data);
+        setLoading(false);
+        document.title = `${data.title} | IMS Games`;
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setError(true);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedGameId]);
 
   const [customConfig, setCustomConfig] = useState<CustomWeightConfig>({
     languageFilter: null,

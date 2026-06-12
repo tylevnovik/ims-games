@@ -2,12 +2,18 @@ import type { GameSummary } from "./types";
 
 export const MIN_RANKING_REVIEWS = 75;
 
-export const IMS_SORT_FIELDS = new Set([
+export type ImsSortField = "ims_weighted" | "ims_raw" | "ims_robust" | "ims_calibrated";
+
+export const IMS_SORT_FIELDS = new Set<ImsSortField>([
   "ims_weighted",
   "ims_raw",
   "ims_robust",
   "ims_calibrated",
 ]);
+
+export function isImsSortField(field: string): field is ImsSortField {
+  return IMS_SORT_FIELDS.has(field as ImsSortField);
+}
 
 export function isRankingEligible(game: Pick<GameSummary, "ims_weighted" | "review_count">): boolean {
   return game.ims_weighted != null && (game.review_count ?? 0) >= MIN_RANKING_REVIEWS;
@@ -17,7 +23,7 @@ export function isRankingEligible(game: Pick<GameSummary, "ims_weighted" | "revi
 export function compareImsSort(
   a: GameSummary,
   b: GameSummary,
-  field: string,
+  field: ImsSortField,
   dir: "asc" | "desc",
 ): number {
   const aEligible = isRankingEligible(a);
@@ -25,8 +31,8 @@ export function compareImsSort(
   if (aEligible !== bEligible) {
     return aEligible ? -1 : 1;
   }
-  const va = (a as Record<string, number | null>)[field] ?? -1;
-  const vb = (b as Record<string, number | null>)[field] ?? -1;
+  const va = a[field] ?? -1;
+  const vb = b[field] ?? -1;
 
   if (!aEligible && !bEligible) {
     const aCount = a.review_count ?? 0;
